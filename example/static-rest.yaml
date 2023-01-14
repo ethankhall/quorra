@@ -1,0 +1,13 @@
+http:
+  - matches:
+    - path: /foo/bar
+      headers:
+        host: localhost
+      methods:
+       - GET
+    response:
+      headers: {}
+      body:
+        type: json
+        json: {}
+      status: 200

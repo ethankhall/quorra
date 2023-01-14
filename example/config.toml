@@ -1,0 +1,14 @@
+[http]
+address = "127.0.0.1:8080"
+
+# [[http.plugin]]
+# source = { type = "wasm", path = "./static-rest.wasm" }
+# config = "./static-rest.yaml"
+
+# [[http.plugin]]
+# source = { type = "lua", path = "./static-rest.lua" }
+# config = "./static-rest.yaml"
+
+[[http.plugin]]
+source = { type = "static" }
+config = "./example/static-rest.yaml"

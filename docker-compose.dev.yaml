@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+ # Jaeger
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    ports:
+      - "16686:16686"
+      - "14268"
+      - "14250"
+
+  # Zipkin
+  zipkin:
+    image: openzipkin/zipkin:latest
+    ports:
+      - "9411:9411"
+
+  # Collector
+  otel-collector:
+    build: dev-config/otel
+    command: ["--config=/opt/otel/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    expose: 
+      - 4317
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "55670:55679" # zpages extension
+      - "9411"        # Zipkin receiver
+      - "55679:55679" # zpages extension
+    depends_on:
+      - jaeger
+      - zipkin
+
+  prometheus:
+    build: dev-config/prometheus
+    ports:
+      - "9090:9090"
