@@ -43,7 +43,7 @@ impl HyperService {
             match plugin.handle_request(&method, &uri, &headers, &body).await {
                 Ok(None) => continue,
                 Ok(Some(response)) => {
-                    return Ok(response.map(|x| Body::from(x)));
+                    return Ok(response.map(Body::from));
                 }
                 Err(e) => {
                     info!(

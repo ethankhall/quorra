@@ -10,7 +10,7 @@ use plugin::HyperService;
 
 use http::{
     header::{HeaderName, AUTHORIZATION},
-    HeaderMap, HeaderValue, Request,
+    HeaderValue, Request,
 };
 use hyper::{server::Server, service::service_fn};
 use std::{iter::once, net::SocketAddr, sync::Arc};
@@ -31,7 +31,7 @@ async fn main() -> ExitCode {
     dotenv::dotenv().ok();
 
     let opt = Opts::parse();
-    let _gaurd = config::configure_logging(&opt.logging_opts, &opt.runtime_metrics);
+    config::configure_logging(&opt.logging_opts, &opt.runtime_metrics);
 
     let result = run_app(opt).await;
 

@@ -4,10 +4,7 @@ use tracing::{debug, instrument};
 use crate::plugin::HttpPlugin;
 use async_trait::async_trait;
 use bytes::Bytes;
-use http::{
-    header::{self, HeaderName},
-    HeaderMap, HeaderValue, Method, Response, Uri,
-};
+use http::{header::HeaderName, HeaderMap, HeaderValue, Method, Response};
 use regex::Regex;
 use thiserror::Error;
 
@@ -50,7 +47,7 @@ mod config {
             let matchers: Result<Vec<_>, _> = config
                 .matches
                 .iter()
-                .map(|x| super::RequestMatcher::try_from(x))
+                .map(super::RequestMatcher::try_from)
                 .collect();
 
             Ok(Self {
@@ -80,7 +77,7 @@ mod config {
             let path = Regex::new(&config.path)?;
             let mut headers = Vec::new();
             for (name, value) in &config.headers {
-                headers.push(super::HeaderMatcher::new(&name, &value)?);
+                headers.push(super::HeaderMatcher::new(name, value)?);
             }
 
             let mut methods = Vec::new();
@@ -195,7 +192,7 @@ pub struct StaticResponse {
 
 impl From<&StaticContainer> for Response<Bytes> {
     fn from(value: &StaticContainer) -> Self {
-        let mut builder = Response::builder().status(value.response.status.clone());
+        let mut builder = Response::builder().status(value.response.status);
 
         {
             if let Some(headers) = builder.headers_mut() {
@@ -221,10 +218,8 @@ pub struct RequestMatcher {
 
 impl RequestMatcher {
     fn request_matches(&self, method: &Method, uri: &str, headers: &HeaderMap) -> bool {
-        if !self.methods.is_empty() {
-            if !self.methods.contains(method) {
-                return false;
-            }
+        if !self.methods.is_empty() && !self.methods.contains(method) {
+            return false;
         }
 
         debug!("Matched method");

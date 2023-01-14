@@ -1,9 +1,9 @@
 use crate::plugin::HttpPlugin;
 use bytes::Bytes;
-use http::{HeaderMap, Method, Response, Uri};
+use http::{HeaderMap, Method, Response};
 use std::sync::Arc;
 use thiserror::Error;
-use tracing::{debug, error, instrument};
+use tracing::{error, instrument};
 
 #[derive(Debug, Clone)]
 pub struct HttpBackend {
@@ -35,7 +35,7 @@ impl HttpBackend {
 
         if let Some(response) = self
             .http_plugin
-            .respond_to_request(&method, &uri, &headers, &body)
+            .respond_to_request(method, uri, headers, &body)
             .await
         {
             return Ok(Some(response));
