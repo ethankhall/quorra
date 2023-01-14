@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use http::{HeaderMap, Method, Response};
 use std::fmt::Debug;
+use std::path::Path;
 use thiserror::Error;
 
 mod http_backend;
@@ -30,22 +31,21 @@ pub enum ConfigError {
     PluginMissingConfigFile(String),
 }
 
-impl TryFrom<crate::config::PluginConfig> for HttpBackend {
-    type Error = anyhow::Error;
+pub fn create_http_backend(
+    config_dir: &Path,
+    value: crate::config::PluginConfig,
+) -> Result<HttpBackend, anyhow::Error> {
+    use crate::config::PluginSource;
+    let backend = match (value.source, value.config) {
+        (PluginSource::LuaPlugin(_lua), _) => todo!(),
+        (PluginSource::WasmPlugin(_wasm), _) => todo!(),
+        (PluginSource::Static(_config), Some(path)) => Box::new(
+            http_static::HttpStaticPlugin::try_from(config_dir.join(path))?,
+        ),
+        (PluginSource::Static(_), None) => {
+            return Err(ConfigError::PluginMissingConfigFile("static".to_string()).into())
+        }
+    };
 
-    fn try_from(value: crate::config::PluginConfig) -> Result<Self, Self::Error> {
-        use crate::config::PluginSource;
-        let backend = match (value.source, value.config) {
-            (PluginSource::LuaPlugin(_lua), _) => todo!(),
-            (PluginSource::WasmPlugin(_wasm), _) => todo!(),
-            (PluginSource::Static(_config), Some(path)) => {
-                Box::new(http_static::HttpStaticPlugin::try_from(path)?)
-            }
-            (PluginSource::Static(_), None) => {
-                return Err(ConfigError::PluginMissingConfigFile("static".to_string()).into())
-            }
-        };
-
-        Ok(HttpBackend::new(backend))
-    }
+    Ok(HttpBackend::new(backend))
 }

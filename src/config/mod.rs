@@ -16,21 +16,24 @@ pub struct ServerConfig {
 }
 
 pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
-    let config_file = cli.config_file.as_path();
-    if !config_file.exists() {
-        bail!("Unable to find file {:?}", config_file);
+    let config_path = cli.config_file.as_path();
+    if !config_path.exists() {
+        bail!("Unable to find file {:?}", config_path);
     }
 
-    debug!("Loading config file {}", config_file.display());
+    debug!("Loading config file {}", config_path.display());
 
-    let config_file = std::fs::read_to_string(config_file)?;
+    let config_file = std::fs::read_to_string(config_path)?;
     let user_config: user::UserConfig = toml::from_str(&config_file)?;
 
     debug!("Loaded config {:?}", user_config);
 
     let mut http_backends: Vec<crate::plugin::HttpBackend> = Vec::new();
     for plugin_config in user_config.http.plugin {
-        let converted = plugin_config.try_into()?;
+        let converted = crate::plugin::create_http_backend(
+            config_path.parent().expect("to have a parent"),
+            plugin_config,
+        )?;
         http_backends.push(converted);
     }
 
