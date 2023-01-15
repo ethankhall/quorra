@@ -114,13 +114,13 @@ impl TryFrom<crate::config::http::StaticResponseConfig> for StaticResponse {
 
     fn try_from(value: crate::config::http::StaticResponseConfig) -> Result<Self, Self::Error> {
         use crate::config::http::*;
-        use bytes::Bytes;
+        
         use bytes::{BufMut, BytesMut};
         use http::{
-            header::HeaderName, header::CONTENT_TYPE, HeaderMap, HeaderValue, Method, Response,
+            header::HeaderName, header::CONTENT_TYPE, HeaderValue,
             StatusCode,
         };
-        use regex::Regex;
+        
         use std::io::Write;
 
         let status_code = StatusCode::from_u16(value.status)?;

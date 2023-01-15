@@ -63,6 +63,7 @@ impl HyperService {
 }
 
 #[tokio::test]
+#[allow(clippy::box_default)]
 async fn test_will_match_first() {
     let empty_backend = HttpBackend::new(Box::new(crate::plugin::test::EmptyReponse::default()));
     let respond_backend =

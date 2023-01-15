@@ -8,8 +8,6 @@ pub enum ConfigError {
 
 #[derive(Error, Debug)]
 pub enum HttpStaticError {
-    #[error("Unable to get headers from response")]
-    UnableToGetHeaders,
     #[error(transparent)]
     HttpError(#[from] http::Error),
     #[error(transparent)]

@@ -7,11 +7,11 @@ use crate::errors::*;
 use crate::plugin::HttpPlugin;
 use async_trait::async_trait;
 use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
-use http::{header::HeaderName, HeaderMap, HeaderValue, Method, Response};
-use http::{header::CONTENT_TYPE, StatusCode};
+
+use http::{header::HeaderName, HeaderMap, Method, Response};
+
 use regex::Regex;
-use std::io::Write;
+
 
 #[derive(Debug, Clone)]
 pub struct StaticContainer {

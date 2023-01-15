@@ -45,6 +45,7 @@ impl HttpBackend {
 }
 
 #[tokio::test]
+#[allow(clippy::box_default)]
 async fn test_no_match_found() {
     let backend = HttpBackend {
         http_plugin: Arc::new(Box::new(crate::plugin::test::EmptyReponse {})),
@@ -58,6 +59,7 @@ async fn test_no_match_found() {
 }
 
 #[tokio::test]
+#[allow(clippy::box_default)]
 async fn test_match_found() {
     let backend = HttpBackend {
         http_plugin: Arc::new(Box::new(crate::plugin::test::ConstantResponse::default())),
