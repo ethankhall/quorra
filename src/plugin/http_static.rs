@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 use tracing::{debug, instrument};
 
 use crate::plugin::HttpPlugin;
@@ -11,12 +11,10 @@ use thiserror::Error;
 mod config {
     use super::{HttpStaticError, StaticResponse};
     use bytes::{BufMut, BytesMut};
-    use http::Method;
     use http::{
         header::{HeaderName, CONTENT_TYPE},
         HeaderMap, HeaderValue, StatusCode,
     };
-    use regex::Regex;
     use serde::{Deserialize, Serialize};
     use serde_json::value::Value as JsonValue;
     use std::collections::BTreeMap;
@@ -61,7 +59,7 @@ mod config {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct MatchesConfig {
         #[serde(default)]
-        pub path: String,
+        pub path: Option<String>,
 
         #[serde(default)]
         pub headers: BTreeMap<String, String>,
@@ -74,22 +72,7 @@ mod config {
         type Error = HttpStaticError;
 
         fn try_from(config: &MatchesConfig) -> Result<Self, Self::Error> {
-            let path = Regex::new(&config.path)?;
-            let mut headers = Vec::new();
-            for (name, value) in &config.headers {
-                headers.push(super::HeaderMatcher::new(name, value)?);
-            }
-
-            let mut methods = Vec::new();
-            for method in &config.methods {
-                methods.push(Method::from_bytes(method.as_bytes())?);
-            }
-
-            Ok(Self {
-                path,
-                headers,
-                methods,
-            })
+            super::RequestMatcher::new(&config.methods, &config.path, &config.headers)
         }
     }
 
@@ -209,14 +192,40 @@ impl From<&StaticContainer> for Response<Bytes> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RequestMatcher {
     pub methods: Vec<Method>,
-    pub path: Regex,
+    pub path: Option<Regex>,
     pub headers: Vec<HeaderMatcher>,
 }
 
 impl RequestMatcher {
+    pub fn new(
+        methods: &Vec<String>,
+        path: &Option<String>,
+        headers: &BTreeMap<String, String>,
+    ) -> Result<Self, HttpStaticError> {
+        let matched_path = match &path {
+            Some(path) => Some(Regex::new(&format!("^{}$", &path))?),
+            None => None,
+        };
+        let mut matched_headers = Vec::new();
+        for (name, value) in headers {
+            matched_headers.push(HeaderMatcher::new(name, value)?);
+        }
+
+        let mut parsed_methods = Vec::new();
+        for method in methods {
+            parsed_methods.push(Method::from_bytes(method.as_bytes())?);
+        }
+
+        Ok(Self {
+            path: matched_path,
+            headers: matched_headers,
+            methods: parsed_methods,
+        })
+    }
+
     fn request_matches(&self, method: &Method, uri: &str, headers: &HeaderMap) -> bool {
         if !self.methods.is_empty() && !self.methods.contains(method) {
             return false;
@@ -224,8 +233,10 @@ impl RequestMatcher {
 
         debug!("Matched method");
 
-        if !self.path.is_match(uri) {
-            return false;
+        if let Some(path) = &self.path {
+            if !path.is_match(uri) {
+                return false;
+            }
         }
 
         debug!("Matched uri");
@@ -243,6 +254,53 @@ impl RequestMatcher {
             })
         })
     }
+}
+
+#[test]
+fn test_request_matcher_empty() {
+    let matcher = RequestMatcher::new(
+        &Default::default(),
+        &Default::default(),
+        &Default::default(),
+    )
+    .unwrap();
+    assert!(matcher.request_matches(&Method::OPTIONS, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::GET, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::PUT, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::DELETE, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::HEAD, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::TRACE, "", &Default::default()));
+
+    assert!(matcher.request_matches(&Method::POST, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::CONNECT, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::PATCH, "", &Default::default()));
+
+    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default()));
+}
+
+#[test]
+fn test_request_matcher_method() {
+    let matcher = RequestMatcher::new(
+        &vec!["GET".to_owned()],
+        &Default::default(),
+        &Default::default(),
+    )
+    .unwrap();
+    assert!(matcher.request_matches(&Method::GET, "", &Default::default()));
+    assert!(!matcher.request_matches(&Method::PUT, "", &Default::default()));
+}
+
+#[test]
+fn test_request_matcher_path() {
+    let matcher = RequestMatcher::new(
+        &Default::default(),
+        &Some("/foo/bar".to_owned()),
+        &Default::default(),
+    )
+    .unwrap();
+    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default()));
+    assert!(!matcher.request_matches(&Method::GET, "/foo/barasdfa", &Default::default()));
+    assert!(!matcher.request_matches(&Method::GET, "/foo/bar/", &Default::default()));
 }
 
 #[derive(Debug, Clone)]

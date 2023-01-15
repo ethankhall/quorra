@@ -39,9 +39,14 @@ pub fn create_http_backend(
     let backend = match (value.source, value.config) {
         (PluginSource::LuaPlugin(_lua), _) => todo!(),
         (PluginSource::WasmPlugin(_wasm), _) => todo!(),
-        (PluginSource::Static(_config), Some(path)) => Box::new(
-            http_static::HttpStaticPlugin::try_from(config_dir.join(path))?,
-        ),
+        (PluginSource::Static(_config), Some(config_plugin_path)) => {
+            let config_plugin_path = if !config_plugin_path.is_absolute() {
+                config_dir.join(config_plugin_path)
+            } else {
+                config_plugin_path
+            };
+            Box::new(http_static::HttpStaticPlugin::try_from(config_plugin_path)?)
+        }
         (PluginSource::Static(_), None) => {
             return Err(ConfigError::PluginMissingConfigFile("static".to_string()).into())
         }
