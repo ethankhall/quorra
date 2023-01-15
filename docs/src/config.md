@@ -21,8 +21,7 @@ To configure plugins, you will need to add something like
 
 ```toml
 [[http.plugin]]
-source = { type = "static" }
-config = "./static-rest.yaml"
+source = { type = "static", config_path = "./static-rest.yaml" }
 ```
 
 For proper values, review the [plugins](./plugins.md) to see how to configure each plugin.

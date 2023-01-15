@@ -16,11 +16,10 @@ Within your application config file, usualy `config.toml` add the following snip
 
 ```toml
 [[http.plugin]]
-source = { type = "static" }
-config = "./static-rest.yaml"
+source = { type = "static", config_path = "./static-rest.yaml" }
 ```
 
-This will configure `/dev/null` to use the static plugin and read the static config from `./static-rest.yaml`. The path in `config` is relative to the application path. For production deployments using an absolute path is best.
+This will configure `/dev/null` to use the static plugin and read the static config from `./static-rest.yaml`. The path in `config_path` is relative to the application path. For production deployments using an absolute path is best.
 
 Next create `./static-rest.yaml` with the contents
 
