@@ -61,7 +61,7 @@ mod test {
             _headers: &HeaderMap,
             _body: &Option<&Bytes>,
         ) -> Option<Response<Bytes>> {
-            let body = self.body.clone().map(|x| x.clone()).unwrap_or_default();
+            let body = self.body.clone().unwrap_or_default();
             let body = Bytes::from(format!("const `{}`", body));
             Some(
                 Response::builder()

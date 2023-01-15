@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::process::ExitCode;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 mod config;
 mod errors;
@@ -14,7 +14,7 @@ use http::{
 use hyper::{server::Server, service::service_fn};
 use plugin::HyperService;
 use std::{iter::once, net::SocketAddr, sync::Arc};
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock};
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{
     compression::CompressionLayer, propagate_header::PropagateHeaderLayer,

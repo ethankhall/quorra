@@ -1,13 +1,8 @@
 use crate::errors::*;
-use bytes::{BufMut, BytesMut};
-use http::{
-    header::{HeaderName, CONTENT_TYPE},
-    HeaderMap, HeaderValue, StatusCode,
-};
 use serde::{Deserialize, Serialize};
 use serde_json::value::Value as JsonValue;
 use std::collections::BTreeMap;
-use std::{io::Write, path::PathBuf};
+use std::{path::PathBuf};
 use tracing::debug;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
