@@ -84,7 +84,7 @@ impl RequestMatcher {
 
         let matched_graphql = match graphql_operations {
             None => None,
-            Some(operation) => Some(Regex::new(&operation)?),
+            Some(operation) => Some(Regex::new(operation)?),
         };
 
         Ok(Self {
