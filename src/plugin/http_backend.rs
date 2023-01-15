@@ -43,3 +43,29 @@ impl HttpBackend {
         Ok(None)
     }
 }
+
+#[tokio::test]
+async fn test_no_match_found() {
+    let backend = HttpBackend {
+        http_plugin: Arc::new(Box::new(crate::plugin::test::EmptyReponse {})),
+    };
+
+    let response = backend
+        .handle_request(&Method::GET, "/", &Default::default(), &Bytes::new())
+        .await;
+    assert!(response.is_ok());
+    assert!(response.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn test_match_found() {
+    let backend = HttpBackend {
+        http_plugin: Arc::new(Box::new(crate::plugin::test::ConstantResponse::default())),
+    };
+
+    let response = backend
+        .handle_request(&Method::GET, "/", &Default::default(), &Bytes::new())
+        .await;
+    assert!(response.is_ok());
+    assert!(response.unwrap().is_some());
+}

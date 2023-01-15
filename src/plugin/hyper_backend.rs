@@ -62,3 +62,20 @@ impl HyperService {
             .body(Body::empty())?)
     }
 }
+
+#[tokio::test]
+async fn test_will_match_first() {
+    let empty_backend = HttpBackend::new(Box::new(crate::plugin::test::EmptyReponse::default()));
+    let respond_backend =
+        HttpBackend::new(Box::new(crate::plugin::test::ConstantResponse::default()));
+
+    let service = HyperService::new(vec![empty_backend, respond_backend]);
+    let req = Request::builder().body(Body::empty()).unwrap();
+
+    let response = service.process_plugins(req).await;
+    assert!(response.is_ok());
+    let body = hyper::body::to_bytes(response.unwrap().into_body())
+        .await
+        .unwrap();
+    assert_eq!(&String::from_utf8(body.to_vec()).unwrap(), "const ``");
+}
