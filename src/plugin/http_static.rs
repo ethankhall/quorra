@@ -1,154 +1,16 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 use tracing::{debug, instrument};
 
+use crate::config::http::http_static::*;
+use crate::errors::*;
 use crate::plugin::HttpPlugin;
 use async_trait::async_trait;
 use bytes::Bytes;
+use bytes::{BufMut, BytesMut};
 use http::{header::HeaderName, HeaderMap, HeaderValue, Method, Response};
+use http::{header::CONTENT_TYPE, StatusCode};
 use regex::Regex;
-use thiserror::Error;
-
-mod config {
-    use super::{HttpStaticError, StaticResponse};
-    use bytes::{BufMut, BytesMut};
-    use http::{
-        header::{HeaderName, CONTENT_TYPE},
-        HeaderMap, HeaderValue, StatusCode,
-    };
-    use serde::{Deserialize, Serialize};
-    use serde_json::value::Value as JsonValue;
-    use std::collections::BTreeMap;
-    use std::{io::Write, path::PathBuf};
-    use tracing::debug;
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    #[serde(rename_all = "kebab-case")]
-    pub struct PluginConfig {
-        #[serde(default = "crate::unique_id")]
-        pub id: String,
-        pub http: Vec<HttpConfig>,
-    }
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct HttpConfig {
-        #[serde(default = "crate::unique_id")]
-        pub id: String,
-        pub matches: Vec<MatchesConfig>,
-        pub response: HttpResponseConfig,
-    }
-
-    impl TryFrom<HttpConfig> for super::StaticContainer {
-        type Error = HttpStaticError;
-
-        fn try_from(config: HttpConfig) -> Result<Self, Self::Error> {
-            let response: super::StaticResponse = config.response.try_into()?;
-            let matchers: Result<Vec<_>, _> = config
-                .matches
-                .iter()
-                .map(super::RequestMatcher::try_from)
-                .collect();
-
-            Ok(Self {
-                id: config.id,
-                response,
-                matchers: matchers?,
-            })
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct MatchesConfig {
-        #[serde(default)]
-        pub path: Option<String>,
-
-        #[serde(default)]
-        pub headers: BTreeMap<String, String>,
-
-        #[serde(default)]
-        pub methods: Vec<String>,
-    }
-
-    impl TryFrom<&MatchesConfig> for super::RequestMatcher {
-        type Error = HttpStaticError;
-
-        fn try_from(config: &MatchesConfig) -> Result<Self, Self::Error> {
-            super::RequestMatcher::new(&config.methods, &config.path, &config.headers)
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct HttpResponseConfig {
-        pub status: u16,
-        #[serde(default)]
-        pub headers: BTreeMap<String, String>,
-        #[serde(default)]
-        pub body: Option<HttpResponseBodyConfig>,
-    }
-
-    impl TryFrom<HttpResponseConfig> for StaticResponse {
-        type Error = HttpStaticError;
-
-        fn try_from(value: HttpResponseConfig) -> Result<Self, Self::Error> {
-            let status_code = StatusCode::from_u16(value.status)?;
-
-            let mut headers = HeaderMap::new();
-
-            let response_body = {
-                let mut writer = BytesMut::new().writer();
-                match value.body {
-                    None => {}
-                    Some(HttpResponseBodyConfig::Json { json }) => {
-                        headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
-                        let body = serde_json::to_vec(&json)?;
-                        writer.write_all(&body)?;
-                    }
-                    Some(HttpResponseBodyConfig::Raw { bytes }) => {
-                        writer.write_all(bytes.as_bytes())?;
-                    }
-                }
-                writer.into_inner().freeze()
-            };
-
-            {
-                for (name, value) in &value.headers {
-                    headers.insert(
-                        HeaderName::from_bytes(name.as_bytes())?,
-                        HeaderValue::from_bytes(value.as_bytes())?,
-                    );
-                }
-            }
-
-            Ok(StaticResponse {
-                status: status_code,
-                headers,
-                body: response_body,
-            })
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    #[serde(tag = "type")]
-    pub enum HttpResponseBodyConfig {
-        #[serde(rename = "raw")]
-        Raw { bytes: String },
-        #[serde(rename = "json")]
-        Json { json: JsonValue },
-    }
-
-    pub fn parse(path: PathBuf) -> Result<(String, Vec<super::StaticContainer>), HttpStaticError> {
-        let contents = std::fs::read_to_string(path)?;
-        let config: PluginConfig = serde_yaml::from_str(&contents)?;
-
-        debug!("Config was parsed as {:?}", config);
-
-        let mut static_containers = Vec::new();
-        for http_config in config.http {
-            static_containers.push(super::StaticContainer::try_from(http_config)?);
-        }
-
-        Ok((config.id, static_containers))
-    }
-}
+use std::io::Write;
 
 #[derive(Debug, Clone)]
 pub struct StaticContainer {
@@ -166,11 +28,71 @@ impl StaticContainer {
     }
 }
 
+impl TryFrom<StaticHttpConfig> for StaticContainer {
+    type Error = HttpStaticError;
+
+    fn try_from(config: StaticHttpConfig) -> Result<Self, Self::Error> {
+        let response: StaticResponse = config.response.try_into()?;
+        let matchers: Result<Vec<_>, _> = config
+            .matches
+            .iter()
+            .map(RequestMatcher::try_from)
+            .collect();
+
+        Ok(Self {
+            id: config.id,
+            response,
+            matchers: matchers?,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct StaticResponse {
     status: http::StatusCode,
     headers: HeaderMap,
     body: Bytes,
+}
+
+impl TryFrom<StaticHttpResponseConfig> for StaticResponse {
+    type Error = HttpStaticError;
+
+    fn try_from(value: StaticHttpResponseConfig) -> Result<Self, Self::Error> {
+        let status_code = StatusCode::from_u16(value.status)?;
+
+        let mut headers = HeaderMap::new();
+
+        let response_body = {
+            let mut writer = BytesMut::new().writer();
+            match value.body {
+                None => {}
+                Some(StaticHttpResponseBodyConfig::Json { json }) => {
+                    headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
+                    let body = serde_json::to_vec(&json)?;
+                    writer.write_all(&body)?;
+                }
+                Some(StaticHttpResponseBodyConfig::Raw { bytes }) => {
+                    writer.write_all(bytes.as_bytes())?;
+                }
+            }
+            writer.into_inner().freeze()
+        };
+
+        {
+            for (name, value) in &value.headers {
+                headers.insert(
+                    HeaderName::from_bytes(name.as_bytes())?,
+                    HeaderValue::from_bytes(value.as_bytes())?,
+                );
+            }
+        }
+
+        Ok(StaticResponse {
+            status: status_code,
+            headers,
+            body: response_body,
+        })
+    }
 }
 
 impl From<&StaticContainer> for Response<Bytes> {
@@ -256,6 +178,14 @@ impl RequestMatcher {
     }
 }
 
+impl TryFrom<&StaticMatchesConfig> for RequestMatcher {
+    type Error = HttpStaticError;
+
+    fn try_from(config: &StaticMatchesConfig) -> Result<Self, Self::Error> {
+        RequestMatcher::new(&config.methods, &config.path, &config.headers)
+    }
+}
+
 #[test]
 fn test_request_matcher_empty() {
     let matcher = RequestMatcher::new(
@@ -318,30 +248,6 @@ impl HeaderMatcher {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum HttpStaticError {
-    #[error("Unable to get headers from response")]
-    UnableToGetHeaders,
-    #[error(transparent)]
-    HttpError(#[from] http::Error),
-    #[error(transparent)]
-    InvalidStatusCode(#[from] http::status::InvalidStatusCode),
-    #[error(transparent)]
-    SerdeJsonError(#[from] serde_json::Error),
-    #[error(transparent)]
-    IoError(#[from] std::io::Error),
-    #[error(transparent)]
-    YamlError(#[from] serde_yaml::Error),
-    #[error(transparent)]
-    RegexError(#[from] regex::Error),
-    #[error(transparent)]
-    InvalidHeaderName(#[from] http::header::InvalidHeaderName),
-    #[error(transparent)]
-    InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
-    #[error(transparent)]
-    InvalidMethod(#[from] http::method::InvalidMethod),
-}
-
 #[derive(Debug, Clone)]
 pub struct HttpStaticPlugin {
     id: String,
@@ -352,11 +258,19 @@ impl TryFrom<PathBuf> for HttpStaticPlugin {
     type Error = anyhow::Error;
 
     fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
-        let (id, static_containers) = config::parse(path)?;
+        let config = crate::config::http::http_static::parse(path)?;
+        let mut static_containers = Vec::new();
 
-        debug!("Static Response Config {:?}", static_containers);
+        for static_config in config.http {
+            static_containers.push(StaticContainer::try_from(static_config)?);
+        }
+
+        debug!(
+            "Static Response {} Config {:?}",
+            config.id, static_containers
+        );
         Ok(Self {
-            id,
+            id: config.id,
             static_containers,
         })
     }

@@ -1,19 +1,20 @@
 use clap::Parser;
 use std::process::ExitCode;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 mod config;
+mod errors;
 mod plugin;
 
 use config::Opts;
-use plugin::HyperService;
 use http::{
     header::{HeaderName, AUTHORIZATION},
     HeaderValue, Request,
 };
-use tokio::sync::RwLock;
 use hyper::{server::Server, service::service_fn};
-use std::{iter::once, net::SocketAddr, sync::{Arc}};
+use plugin::HyperService;
+use std::{iter::once, net::SocketAddr, sync::Arc};
+use tokio::sync::{mpsc, RwLock};
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{
     compression::CompressionLayer, propagate_header::PropagateHeaderLayer,
@@ -47,13 +48,13 @@ async fn main() -> ExitCode {
 }
 
 async fn run_app(cli: Opts) -> Result<(), anyhow::Error> {
-    let server_config = config::load_config(&cli).await?;
+    let (server_config, _) = config::load_config(&cli).await?;
     let addr: SocketAddr = server_config.http_address.parse()?;
 
     let http_backends = server_config.http_backends;
     debug!("Found {} http backends", http_backends.len());
-    let http_backends = RwLock::new(http_backends);
-    let hyper_backend = Arc::new(HyperService::new(http_backends));
+    let http_backends = Arc::new(RwLock::new(http_backends));
+    let hyper_backend = Arc::new(HyperService::new(http_backends.clone()));
 
     let real_service = service_fn(move |req: Request<hyper::Body>| {
         let hyper_backend = hyper_backend.clone();

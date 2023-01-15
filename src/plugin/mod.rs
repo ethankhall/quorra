@@ -1,11 +1,11 @@
 // mod wasm;
 
+use crate::errors::*;
 use async_trait::async_trait;
 use bytes::Bytes;
 use http::{HeaderMap, Method, Response};
 use std::fmt::Debug;
-use std::path::Path;
-use thiserror::Error;
+use std::path::{Path, PathBuf};
 
 mod http_backend;
 mod http_static;
@@ -73,18 +73,12 @@ mod test {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ConfigError {
-    #[error("The plugin {0} is requires a config file.")]
-    PluginMissingConfigFile(String),
-}
-
 pub fn create_http_backend(
     config_dir: &Path,
     value: crate::config::PluginConfig,
-) -> Result<HttpBackend, anyhow::Error> {
+) -> Result<(HttpBackend, PathBuf), anyhow::Error> {
     use crate::config::PluginSource;
-    let backend = match (value.source, value.config) {
+    let (backend, config_plugin_path) = match (value.source, value.config) {
         (PluginSource::LuaPlugin(_lua), _) => todo!(),
         (PluginSource::WasmPlugin(_wasm), _) => todo!(),
         (PluginSource::Static(_config), Some(config_plugin_path)) => {
@@ -93,12 +87,17 @@ pub fn create_http_backend(
             } else {
                 config_plugin_path
             };
-            Box::new(http_static::HttpStaticPlugin::try_from(config_plugin_path)?)
+            (
+                Box::new(http_static::HttpStaticPlugin::try_from(
+                    config_plugin_path.clone(),
+                )?),
+                config_plugin_path,
+            )
         }
         (PluginSource::Static(_), None) => {
             return Err(ConfigError::PluginMissingConfigFile("static".to_string()).into())
         }
     };
 
-    Ok(HttpBackend::new(backend))
+    Ok((HttpBackend::new(backend), config_plugin_path))
 }

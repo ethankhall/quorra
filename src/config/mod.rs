@@ -1,7 +1,9 @@
 use anyhow::bail;
+use std::path::PathBuf;
 use tracing::debug;
 
 mod cli;
+pub mod http;
 mod logging;
 mod user;
 
@@ -15,11 +17,14 @@ pub struct ServerConfig {
     pub http_backends: Vec<crate::plugin::HttpBackend>,
 }
 
-pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
+pub async fn load_config(cli: &Opts) -> Result<(ServerConfig, Vec<PathBuf>), anyhow::Error> {
     let config_path = cli.config_file.as_path();
     if !config_path.exists() {
         bail!("Unable to find file {:?}", config_path);
     }
+
+    let mut paths_to_watch = Vec::new();
+    paths_to_watch.push(config_path.to_path_buf());
 
     debug!("Loading config file {}", config_path.display());
 
@@ -30,15 +35,19 @@ pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
 
     let mut http_backends: Vec<crate::plugin::HttpBackend> = Vec::new();
     for plugin_config in user_config.http.plugin {
-        let converted = crate::plugin::create_http_backend(
+        let (converted, plugin_config_path) = crate::plugin::create_http_backend(
             config_path.parent().expect("to have a parent"),
             plugin_config,
         )?;
         http_backends.push(converted);
+        paths_to_watch.push(plugin_config_path.clone());
     }
 
-    Ok(ServerConfig {
-        http_address: user_config.http.address,
-        http_backends,
-    })
+    Ok((
+        ServerConfig {
+            http_address: user_config.http.address,
+            http_backends,
+        },
+        paths_to_watch,
+    ))
 }

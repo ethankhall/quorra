@@ -1,8 +1,8 @@
 use http::StatusCode;
 use hyper::{Body, Request, Response};
 use std::sync::Arc;
-use tracing::{debug, info, instrument};
 use tokio::sync::RwLock;
+use tracing::{debug, info, instrument};
 
 use super::HttpBackend;
 
@@ -12,10 +12,8 @@ pub struct HyperService {
 }
 
 impl HyperService {
-    pub fn new(backends: RwLock<Vec<HttpBackend>>) -> Self {
-        Self {
-            plugins: Arc::new(backends),
-        }
+    pub fn new(backends: Arc<RwLock<Vec<HttpBackend>>>) -> Self {
+        Self { plugins: backends }
     }
 
     #[instrument(skip_all, fields(http.uri = %req.uri(), http.method = %req.method()))]
@@ -70,7 +68,7 @@ async fn test_will_match_first() {
     let respond_backend =
         HttpBackend::new(Box::new(crate::plugin::test::ConstantResponse::default()));
 
-    let service = HyperService::new(RwLock::new(vec![empty_backend, respond_backend]));
+    let service = HyperService::new(Arc::new(RwLock::new(vec![empty_backend, respond_backend])));
     let req = Request::builder().body(Body::empty()).unwrap();
 
     let response = service.process_plugins(req).await;
