@@ -134,7 +134,7 @@ impl TryFrom<Vec<crate::config::http::StaticResponseConfig>> for StaticResponseC
     fn try_from(
         configs: Vec<crate::config::http::StaticResponseConfig>,
     ) -> Result<Self, Self::Error> {
-        let mut configs = configs.clone();
+        let mut configs = configs;
         configs.sort_by(|a, b| a.weight.cmp(&b.weight));
 
         let mut responses = Vec::new();
