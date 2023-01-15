@@ -330,6 +330,8 @@ dependencies = [
  "atty",
  "bytes",
  "clap",
+ "dev-null-plugin",
+ "dev-null-plugin-http",
  "dotenv",
  "figment",
  "futures",
@@ -358,6 +360,74 @@ dependencies = [
  "tracing-log",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "dev-null-plugin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "atty",
+ "bytes",
+ "clap",
+ "dotenv",
+ "figment",
+ "futures",
+ "http",
+ "human-panic",
+ "hyper",
+ "json",
+ "lazy_static",
+ "notify",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-appender",
+ "tracing-attributes",
+ "tracing-core",
+ "tracing-log",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "dev-null-plugin-http"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bytes",
+ "dev-null-plugin",
+ "figment",
+ "futures",
+ "http",
+ "hyper",
+ "json",
+ "lazy_static",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tower",
+ "tower-http",
+ "tracing",
  "uuid 1.2.2",
 ]
 

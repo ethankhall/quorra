@@ -10,5 +10,4 @@ address = "127.0.0.1:8080"
 # config = "./static-rest.yaml"
 
 [[http.plugin]]
-source = { type = "static" }
-config = "./static-rest.yaml"
+source = { type = "static", config_path = "./static-rest.yaml" }

@@ -1,4 +1,4 @@
-use crate::plugin::HttpPlugin;
+use crate::HttpPlugin;
 use bytes::Bytes;
 use http::{HeaderMap, Method, Response};
 use std::sync::Arc;
@@ -17,9 +17,9 @@ pub enum HttpBackendErr {
 }
 
 impl HttpBackend {
-    pub fn new(plugin: Box<dyn HttpPlugin>) -> Self {
+    pub fn new(plugin: &Arc<Box<dyn HttpPlugin>>) -> Self {
         Self {
-            http_plugin: Arc::new(plugin),
+            http_plugin: plugin.clone(),
         }
     }
 
@@ -48,7 +48,7 @@ impl HttpBackend {
 #[allow(clippy::box_default)]
 async fn test_no_match_found() {
     let backend = HttpBackend {
-        http_plugin: Arc::new(Box::new(crate::plugin::test::EmptyReponse {})),
+        http_plugin: Arc::new(Box::new(crate::test_models::EmptyReponse {})),
     };
 
     let response = backend
@@ -62,7 +62,7 @@ async fn test_no_match_found() {
 #[allow(clippy::box_default)]
 async fn test_match_found() {
     let backend = HttpBackend {
-        http_plugin: Arc::new(Box::new(crate::plugin::test::ConstantResponse::default())),
+        http_plugin: Arc::new(Box::new(crate::test_models::ConstantResponse::default())),
     };
 
     let response = backend

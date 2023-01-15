@@ -1,13 +1,12 @@
-use super::StaticResponseConfig;
-use crate::errors::*;
-use figment::{
-    providers::{Format, YamlExtended},
-    Figment,
-};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::path::PathBuf;
-use tracing::debug;
+use serde_json::value::Value as JsonValue;
+use std::{collections::BTreeMap, path::PathBuf};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct StaticPluginDef {
+    /// Path to configure the static config
+    pub config_path: PathBuf,
+}
 
 /// Root of the static plugin configuration
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -70,10 +69,28 @@ pub struct GraphqlStaticMatchConfig {
     pub operation_name: String,
 }
 
-pub fn parse(path: PathBuf) -> Result<Figment, HttpStaticError> {
-    debug!("Loading static plugin file {}", path.display());
-    let figment = Figment::new().join(YamlExtended::file(&path));
-    debug!("Config was parsed as {:?}", figment);
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StaticResponseConfig {
+    #[serde(default = "crate::unique_id")]
+    pub id: String,
+    #[serde(default = "default_weight")]
+    pub weight: u16,
+    pub status: u16,
+    #[serde(default)]
+    pub headers: BTreeMap<String, String>,
+    #[serde(default)]
+    pub body: Option<StaticResponseBodyConfig>,
+}
 
-    Ok(figment)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum StaticResponseBodyConfig {
+    #[serde(rename = "raw")]
+    Raw { bytes: String },
+    #[serde(rename = "json")]
+    Json { json: JsonValue },
+}
+
+fn default_weight() -> u16 {
+    1
 }

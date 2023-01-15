@@ -1,11 +1,8 @@
 use figment::Figment;
-use std::{collections::BTreeMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr, sync::atomic::Ordering};
 use tracing::{debug, instrument};
 
-use super::StaticResponseContainer;
-use crate::config::http::http_static::*;
-use crate::errors::*;
-use crate::plugin::HttpPlugin;
+use crate::{config::internal::*, HttpPluginError};
 use async_trait::async_trait;
 use bytes::Bytes;
 
@@ -13,14 +10,50 @@ use http::{header::HeaderName, HeaderMap, Method, Response};
 
 use regex::Regex;
 
-#[derive(Debug, Clone)]
-pub struct StaticContainer {
-    id: String,
-    matchers: Vec<RequestMatcher>,
-    responses: StaticResponseContainer,
+impl StaticResponse {
+    #[instrument(skip_all, fields(plugin.id = plugin_id, payload.id = payload_id))]
+    fn make_response(&self, plugin_id: &str, payload_id: &str) -> Response<Bytes> {
+        use http::header::{HeaderName, HeaderValue};
+        let mut builder = Response::builder().status(self.status);
+
+        {
+            if let Some(headers) = builder.headers_mut() {
+                headers.clone_from(&self.headers);
+                let plugin_id = match HeaderValue::from_bytes(plugin_id.as_bytes()) {
+                    Ok(value) => value,
+                    Err(_) => HeaderValue::from_static("plugin id invalid header"),
+                };
+                headers.insert(HeaderName::from_static("x-dev-null-plugin-id"), plugin_id);
+
+                let payload_id = match HeaderValue::from_bytes(payload_id.as_bytes()) {
+                    Ok(value) => value,
+                    Err(_) => HeaderValue::from_static("payload id invalid header"),
+                };
+                headers.insert(HeaderName::from_static("x-dev-null-payload-id"), payload_id);
+            }
+        }
+
+        builder.body(self.body.clone()).unwrap()
+    }
 }
 
-impl StaticContainer {
+impl StaticResponseContainer {
+    pub fn get_response(&self) -> &StaticResponse {
+        let response_lenght = self.responses.len();
+        let value = match self
+            .pointer
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |value| {
+                Some((value + 1) % response_lenght)
+            }) {
+            Ok(value) => value,
+            Err(value) => value,
+        };
+
+        self.responses.get(value).unwrap()
+    }
+}
+
+impl PayloadBackendConfig {
     #[instrument(skip_all, fields(container.id = self.id))]
     fn matches(
         &self,
@@ -35,67 +68,7 @@ impl StaticContainer {
     }
 }
 
-impl TryFrom<StaticHttpConfig> for StaticContainer {
-    type Error = HttpStaticError;
-
-    fn try_from(config: StaticHttpConfig) -> Result<Self, Self::Error> {
-        let responses: StaticResponseContainer = config.responses.try_into()?;
-        let matchers: Result<Vec<_>, _> = config
-            .matches
-            .iter()
-            .map(RequestMatcher::try_from)
-            .collect();
-
-        Ok(Self {
-            id: config.id,
-            responses,
-            matchers: matchers?,
-        })
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct RequestMatcher {
-    pub methods: Vec<Method>,
-    pub path: Option<Regex>,
-    pub headers: Vec<HeaderMatcher>,
-    pub graphql_operations: Option<Regex>,
-}
-
 impl RequestMatcher {
-    pub fn new(
-        methods: &Vec<String>,
-        path: &Option<String>,
-        headers: &BTreeMap<String, String>,
-        graphql_operations: &Option<String>,
-    ) -> Result<Self, HttpStaticError> {
-        let matched_path = match &path {
-            Some(path) => Some(Regex::new(&format!("^{}$", &path))?),
-            None => None,
-        };
-        let mut matched_headers = Vec::new();
-        for (name, value) in headers {
-            matched_headers.push(HeaderMatcher::new(name, value)?);
-        }
-
-        let mut parsed_methods = Vec::new();
-        for method in methods {
-            parsed_methods.push(Method::from_bytes(method.as_bytes())?);
-        }
-
-        let matched_graphql = match graphql_operations {
-            None => None,
-            Some(operation) => Some(Regex::new(operation)?),
-        };
-
-        Ok(Self {
-            path: matched_path,
-            headers: matched_headers,
-            methods: parsed_methods,
-            graphql_operations: matched_graphql,
-        })
-    }
-
     fn request_matches(
         &self,
         method: &Method,
@@ -171,20 +144,6 @@ impl RequestMatcher {
     }
 }
 
-impl TryFrom<&StaticMatchesConfig> for RequestMatcher {
-    type Error = HttpStaticError;
-
-    fn try_from(config: &StaticMatchesConfig) -> Result<Self, Self::Error> {
-        let gql_operations = config.graphql.clone().map(|x| x.operation_name);
-        RequestMatcher::new(
-            &config.methods,
-            &config.path,
-            &config.headers,
-            &gql_operations,
-        )
-    }
-}
-
 #[test]
 fn test_request_matcher_empty() {
     let matcher = RequestMatcher::new(
@@ -236,51 +195,13 @@ fn test_request_matcher_path() {
 }
 
 #[derive(Debug, Clone)]
-pub struct HeaderMatcher {
-    name: HeaderName,
-    value: Regex,
-}
-
-impl HeaderMatcher {
-    fn new(name: &str, value: &str) -> Result<Self, HttpStaticError> {
-        Ok(Self {
-            name: HeaderName::from_str(name)?,
-            value: Regex::new(value)?,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct HttpStaticPlugin {
-    id: String,
-    static_containers: Vec<StaticContainer>,
-}
-
-impl TryFrom<&Figment> for HttpStaticPlugin {
-    type Error = anyhow::Error;
-
-    fn try_from(figment: &Figment) -> Result<Self, Self::Error> {
-        let config: StaticPluginConfig = figment.extract()?;
-        let mut static_containers = Vec::new();
-
-        for static_config in config.http {
-            static_containers.push(StaticContainer::try_from(static_config)?);
-        }
-
-        debug!(
-            "Static Response {} Config {:?}",
-            config.id, static_containers
-        );
-        Ok(Self {
-            id: config.id,
-            static_containers,
-        })
-    }
+    pub config: PluginBackendConfig,
 }
 
 #[async_trait]
-impl HttpPlugin for HttpStaticPlugin {
-    #[instrument(skip_all, fields(plugin.id = self.id))]
+impl dev_null_plugin::HttpPlugin for HttpStaticPlugin {
+    #[instrument(skip_all, fields(plugin.id = self.config.id))]
     async fn respond_to_request(
         &self,
         method: &Method,
@@ -288,13 +209,13 @@ impl HttpPlugin for HttpStaticPlugin {
         headers: &HeaderMap,
         body: &Option<&Bytes>,
     ) -> Option<Response<Bytes>> {
-        for container in &self.static_containers {
-            if container.matches(method, uri, headers, body) {
+        for payload in &self.config.payloads {
+            if payload.matches(method, uri, headers, body) {
                 return Some(
-                    container
+                    payload
                         .responses
                         .get_response()
-                        .make_response(&self.id, &container.id),
+                        .make_response(&self.config.id, &payload.id),
                 );
             }
         }

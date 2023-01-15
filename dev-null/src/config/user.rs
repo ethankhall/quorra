@@ -1,3 +1,4 @@
+use dev_null_plugin_http::StaticPluginDef;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -27,9 +28,6 @@ pub struct HttpConfig {
 pub struct PluginConfig {
     /// Define what kind of plugin is being defined.
     pub source: PluginSource,
-
-    /// Where extra configuration for the plugin will be pulled from.
-    pub config: Option<PathBuf>,
 }
 
 /// List of supported plugins.
@@ -55,6 +53,3 @@ pub struct LuaPluginDef {
     /// Path to the lua file on disk.
     path: PathBuf,
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct StaticPluginDef {}

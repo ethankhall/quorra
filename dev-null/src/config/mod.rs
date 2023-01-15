@@ -1,12 +1,13 @@
 use anyhow::bail;
+use dev_null_plugin::HttpPlugin;
 use figment::{
     providers::{Format, Toml},
     Figment,
 };
+use std::{path::Path, sync::Arc};
 use tracing::debug;
 
 mod cli;
-pub mod http;
 mod logging;
 mod user;
 
@@ -17,7 +18,7 @@ pub use user::*;
 #[derive(Debug, Clone)]
 pub struct ServerConfig {
     pub http_address: String,
-    pub http_backends: Vec<crate::plugin::HttpBackend>,
+    pub http_plugins: Vec<Arc<Box<dyn HttpPlugin>>>,
 }
 
 pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
@@ -33,17 +34,33 @@ pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
 
     debug!("Loaded config {:?}", user_config);
 
-    let mut http_backends: Vec<crate::plugin::HttpBackend> = Vec::new();
+    let mut http_plugins: Vec<_> = Vec::new();
     for plugin_config in user_config.http.plugin {
-        let (backend, _plugin_figment) = crate::plugin::create_http_backend(
+        let plugin = create_http_backend(
             config_path.parent().expect("to have a parent"),
             plugin_config,
-        )?;
-        http_backends.push(backend);
+        )
+        .await?;
+        http_plugins.push(Arc::new(plugin));
     }
 
     Ok(ServerConfig {
         http_address: user_config.http.address,
-        http_backends,
+        http_plugins: http_plugins,
     })
+}
+
+pub async fn create_http_backend(
+    config_dir: &Path,
+    value: crate::config::PluginConfig,
+) -> Result<Box<dyn HttpPlugin>, anyhow::Error> {
+    let backend = match value.source {
+        PluginSource::LuaPlugin(_lua) => todo!(),
+        PluginSource::WasmPlugin(_wasm) => todo!(),
+        PluginSource::Static(config) => {
+            Box::new(dev_null_plugin_http::build_plugin(config, config_dir).await?)
+        }
+    };
+
+    Ok(backend)
 }

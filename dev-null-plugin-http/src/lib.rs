@@ -1,13 +1,14 @@
+use std::path::Path;
+
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum ConfigError {
-    #[error("The plugin {0} is requires a config file.")]
-    PluginMissingConfigFile(String),
-}
+mod config;
+mod http_static;
+
+pub use crate::config::StaticPluginDef;
 
 #[derive(Error, Debug)]
-pub enum HttpStaticError {
+pub enum HttpPluginError {
     #[error(transparent)]
     HttpError(#[from] http::Error),
     #[error(transparent)]
@@ -28,4 +29,21 @@ pub enum HttpStaticError {
     InvalidMethod(#[from] http::method::InvalidMethod),
     #[error("No respone configured for match")]
     NoResponsesProvided,
+    #[error(transparent)]
+    FigmentError(#[from] figment::Error),
+}
+
+pub(crate) fn unique_id() -> String {
+    uuid::Uuid::new_v4().to_string()
+}
+
+pub async fn build_plugin(
+    def: crate::config::StaticPluginDef,
+    config_dir: &Path,
+) -> Result<http_static::HttpStaticPlugin, HttpPluginError> {
+    let plugin_config = config::load_http_plugin_config(def, config_dir).await?;
+
+    Ok(http_static::HttpStaticPlugin {
+        config: plugin_config,
+    })
 }

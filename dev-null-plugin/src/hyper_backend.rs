@@ -1,19 +1,26 @@
+use std::sync::Arc;
+
+use crate::HttpPlugin;
 use http::StatusCode;
 use hyper::{Body, Request, Response};
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};
 
-use super::HttpBackend;
+use crate::http_backend::HttpBackend;
 
 #[derive(Clone)]
 pub struct HyperService {
-    plugins: Arc<RwLock<Vec<HttpBackend>>>,
+    backends: Arc<Vec<HttpBackend>>,
 }
 
 impl HyperService {
-    pub fn new(backends: Arc<RwLock<Vec<HttpBackend>>>) -> Self {
-        Self { plugins: backends }
+    pub fn new(plugins: Vec<Arc<Box<dyn HttpPlugin>>>) -> Self {
+        let mut backends = Vec::new();
+        for plugin in plugins.iter() {
+            backends.push(HttpBackend::new(plugin));
+        }
+        Self {
+            backends: Arc::new(backends),
+        }
     }
 
     #[instrument(skip_all, fields(http.uri = %req.uri(), http.method = %req.method()))]
@@ -38,15 +45,15 @@ impl HyperService {
 
         debug!("Incoming request");
 
-        for plugin in self.plugins.read().await.iter() {
-            match plugin.handle_request(&method, &uri, &headers, &body).await {
+        for backend in self.backends.iter() {
+            match backend.handle_request(&method, &uri, &headers, &body).await {
                 Ok(None) => continue,
                 Ok(Some(response)) => {
                     return Ok(response.map(Body::from));
                 }
                 Err(e) => {
                     info!(
-                        "Plugin raised an error, swallowing response and continueing. Error: {:?}",
+                        "Backend raised an error, swallowing response and continueing. Error: {:?}",
                         e
                     );
                     continue;
@@ -54,7 +61,7 @@ impl HyperService {
             }
         }
 
-        debug!("No plugin was configured to process request");
+        debug!("No backend was configured to process request");
 
         Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
@@ -65,11 +72,10 @@ impl HyperService {
 #[tokio::test]
 #[allow(clippy::box_default)]
 async fn test_will_match_first() {
-    let empty_backend = HttpBackend::new(Box::new(crate::plugin::test::EmptyReponse::default()));
-    let respond_backend =
-        HttpBackend::new(Box::new(crate::plugin::test::ConstantResponse::default()));
-
-    let service = HyperService::new(Arc::new(RwLock::new(vec![empty_backend, respond_backend])));
+    let service = HyperService::new(vec![
+        Arc::new(Box::new(crate::test_models::EmptyReponse::default())),
+        Arc::new(Box::new(crate::test_models::ConstantResponse::default())),
+    ]);
     let req = Request::builder().body(Body::empty()).unwrap();
 
     let response = service.process_plugins(req).await;
