@@ -7,13 +7,13 @@ mod plugin;
 
 use config::Opts;
 use plugin::HyperService;
-
 use http::{
     header::{HeaderName, AUTHORIZATION},
     HeaderValue, Request,
 };
+use tokio::sync::RwLock;
 use hyper::{server::Server, service::service_fn};
-use std::{iter::once, net::SocketAddr, sync::Arc};
+use std::{iter::once, net::SocketAddr, sync::{Arc}};
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{
     compression::CompressionLayer, propagate_header::PropagateHeaderLayer,
@@ -52,6 +52,7 @@ async fn run_app(cli: Opts) -> Result<(), anyhow::Error> {
 
     let http_backends = server_config.http_backends;
     debug!("Found {} http backends", http_backends.len());
+    let http_backends = RwLock::new(http_backends);
     let hyper_backend = Arc::new(HyperService::new(http_backends));
 
     let real_service = service_fn(move |req: Request<hyper::Body>| {

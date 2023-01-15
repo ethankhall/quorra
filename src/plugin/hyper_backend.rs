@@ -2,16 +2,17 @@ use http::StatusCode;
 use hyper::{Body, Request, Response};
 use std::sync::Arc;
 use tracing::{debug, info, instrument};
+use tokio::sync::RwLock;
 
 use super::HttpBackend;
 
 #[derive(Clone)]
 pub struct HyperService {
-    plugins: Arc<Vec<HttpBackend>>,
+    plugins: Arc<RwLock<Vec<HttpBackend>>>,
 }
 
 impl HyperService {
-    pub fn new(backends: Vec<HttpBackend>) -> Self {
+    pub fn new(backends: RwLock<Vec<HttpBackend>>) -> Self {
         Self {
             plugins: Arc::new(backends),
         }
@@ -39,7 +40,7 @@ impl HyperService {
 
         debug!("Incoming request");
 
-        for plugin in self.plugins.iter() {
+        for plugin in self.plugins.read().await.iter() {
             match plugin.handle_request(&method, &uri, &headers, &body).await {
                 Ok(None) => continue,
                 Ok(Some(response)) => {
@@ -69,7 +70,7 @@ async fn test_will_match_first() {
     let respond_backend =
         HttpBackend::new(Box::new(crate::plugin::test::ConstantResponse::default()));
 
-    let service = HyperService::new(vec![empty_backend, respond_backend]);
+    let service = HyperService::new(RwLock::new(vec![empty_backend, respond_backend]));
     let req = Request::builder().body(Body::empty()).unwrap();
 
     let response = service.process_plugins(req).await;
