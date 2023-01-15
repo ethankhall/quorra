@@ -2,6 +2,8 @@
 name = "dev-null"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+categories = ["development-tools::testing"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

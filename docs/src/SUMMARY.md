@@ -6,3 +6,4 @@
   - [Static Response](./plugin/static-response.md)
   - [Lua](./plugin/lua.md)
   - [WASM](./plugin/wasm.md)
+- [Developer](./developer/index.md)
