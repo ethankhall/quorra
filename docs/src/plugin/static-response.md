@@ -60,8 +60,28 @@ http:
 
 When used in a large application, defining the static plugin multiple times will allow teams to own specific files. Seperate the ownership based on your ownership model.
 
-## The `config` file structure
+## File structure
 
 At the moment, `/dev/null` only supports http requests, so all entries are under `http`.
 
 Within `http` key there are two elements that need to be filled out `matches` and `responses`.
+
+### `matches`
+
+The `matches` field is used to determine if the response should be sent. _ALL_ options must match or it will be skipped. All matchers are optional, if none are provided, the request will always match.
+
+A description of the matchers.
+
+| Matcher                  | Description                                                                                                               |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `path`                   | A [regex][regex] to match against the path. The Regex will be parsed as `^{path}$` to ensure that the path fully matches. |
+| `headers`                | A key-value map. The key is the header name, and the value is a [regex][regex] that can be used to match against.         |
+| `methods`                | A list of http [methods][methods].                                                                                        |
+| `graphql.operation-name` | A [regex][regex] of the graphql operation                                                                                 |
+
+### `responses`
+
+
+
+  [regex]: https://docs.rs/regex/latest/regex/
+  [methods]: https://docs.rs/http/latest/http/method/struct.Method.html

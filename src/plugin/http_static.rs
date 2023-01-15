@@ -1,4 +1,5 @@
-use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
+use figment::Figment;
+use std::{collections::BTreeMap, str::FromStr};
 use tracing::{debug, instrument};
 
 use super::StaticResponseContainer;
@@ -255,11 +256,11 @@ pub struct HttpStaticPlugin {
     static_containers: Vec<StaticContainer>,
 }
 
-impl TryFrom<PathBuf> for HttpStaticPlugin {
+impl TryFrom<&Figment> for HttpStaticPlugin {
     type Error = anyhow::Error;
 
-    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
-        let config = crate::config::http::http_static::parse(path)?;
+    fn try_from(figment: &Figment) -> Result<Self, Self::Error> {
+        let config: StaticPluginConfig = figment.extract()?;
         let mut static_containers = Vec::new();
 
         for static_config in config.http {

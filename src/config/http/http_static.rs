@@ -1,5 +1,9 @@
 use super::StaticResponseConfig;
 use crate::errors::*;
+use figment::{
+    providers::{Format, YamlExtended},
+    Figment,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -50,11 +54,10 @@ pub struct GraphqlStaticMatchConfig {
     pub operation_name: String,
 }
 
-pub fn parse(path: PathBuf) -> Result<StaticPluginConfig, HttpStaticError> {
-    let contents = std::fs::read_to_string(path)?;
-    let config: StaticPluginConfig = serde_yaml::from_str(&contents)?;
+pub fn parse(path: PathBuf) -> Result<Figment, HttpStaticError> {
+    debug!("Loading static plugin file {}", path.display());
+    let figment = Figment::new().join(YamlExtended::file(&path));
+    debug!("Config was parsed as {:?}", figment);
 
-    debug!("Config was parsed as {:?}", config);
-
-    Ok(config)
+    Ok(figment)
 }

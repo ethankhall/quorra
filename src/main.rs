@@ -48,7 +48,7 @@ async fn main() -> ExitCode {
 }
 
 async fn run_app(cli: Opts) -> Result<(), anyhow::Error> {
-    let (server_config, _) = config::load_config(&cli).await?;
+    let server_config = config::load_config(&cli).await?;
     let addr: SocketAddr = server_config.http_address.parse()?;
 
     let http_backends = server_config.http_backends;

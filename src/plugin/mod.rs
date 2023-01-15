@@ -3,10 +3,11 @@
 use crate::errors::*;
 use async_trait::async_trait;
 use bytes::Bytes;
+use figment::Figment;
 use http::{HeaderMap, Method, Response};
 use rand::{seq::SliceRandom, thread_rng};
 use std::fmt::Debug;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -82,9 +83,9 @@ mod test {
 pub fn create_http_backend(
     config_dir: &Path,
     value: crate::config::PluginConfig,
-) -> Result<(HttpBackend, PathBuf), anyhow::Error> {
+) -> Result<(HttpBackend, Figment), anyhow::Error> {
     use crate::config::PluginSource;
-    let (backend, config_plugin_path) = match (value.source, value.config) {
+    let (backend, figment) = match (value.source, value.config) {
         (PluginSource::LuaPlugin(_lua), _) => todo!(),
         (PluginSource::WasmPlugin(_wasm), _) => todo!(),
         (PluginSource::Static(_config), Some(config_plugin_path)) => {
@@ -93,11 +94,11 @@ pub fn create_http_backend(
             } else {
                 config_plugin_path
             };
+
+            let config = crate::config::http::http_static::parse(config_plugin_path)?;
             (
-                Box::new(http_static::HttpStaticPlugin::try_from(
-                    config_plugin_path.clone(),
-                )?),
-                config_plugin_path,
+                Box::new(http_static::HttpStaticPlugin::try_from(&config)?),
+                config,
             )
         }
         (PluginSource::Static(_), None) => {
@@ -105,7 +106,7 @@ pub fn create_http_backend(
         }
     };
 
-    Ok((HttpBackend::new(backend), config_plugin_path))
+    Ok((HttpBackend::new(backend), figment))
 }
 
 #[derive(Debug, Clone)]

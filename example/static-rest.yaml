@@ -13,8 +13,8 @@ http:
         status: 200
         weight: 5
       - body:
-          type: json
-          json: {}
+          type: raw
+          bytes: '{}'
         status: 500
   - matches:
     - path: /graphql
