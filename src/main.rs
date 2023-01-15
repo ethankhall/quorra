@@ -14,7 +14,7 @@ use http::{
 use hyper::{server::Server, service::service_fn};
 use plugin::HyperService;
 use std::{iter::once, net::SocketAddr, sync::Arc};
-use tokio::sync::{RwLock};
+use tokio::sync::RwLock;
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{
     compression::CompressionLayer, propagate_header::PropagateHeaderLayer,

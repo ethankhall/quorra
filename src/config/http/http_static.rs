@@ -1,8 +1,8 @@
+use super::StaticResponseConfig;
 use crate::errors::*;
 use serde::{Deserialize, Serialize};
-use serde_json::value::Value as JsonValue;
 use std::collections::BTreeMap;
-use std::{path::PathBuf};
+use std::path::PathBuf;
 use tracing::debug;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -18,7 +18,7 @@ pub struct StaticHttpConfig {
     #[serde(default = "crate::unique_id")]
     pub id: String,
     pub matches: Vec<StaticMatchesConfig>,
-    pub response: StaticHttpResponseConfig,
+    pub response: StaticResponseConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -31,24 +31,6 @@ pub struct StaticMatchesConfig {
 
     #[serde(default)]
     pub methods: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct StaticHttpResponseConfig {
-    pub status: u16,
-    #[serde(default)]
-    pub headers: BTreeMap<String, String>,
-    #[serde(default)]
-    pub body: Option<StaticHttpResponseBodyConfig>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum StaticHttpResponseBodyConfig {
-    #[serde(rename = "raw")]
-    Raw { bytes: String },
-    #[serde(rename = "json")]
-    Json { json: JsonValue },
 }
 
 pub fn parse(path: PathBuf) -> Result<StaticPluginConfig, HttpStaticError> {

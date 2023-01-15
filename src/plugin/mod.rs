@@ -101,3 +101,81 @@ pub fn create_http_backend(
 
     Ok((HttpBackend::new(backend), config_plugin_path))
 }
+
+#[derive(Debug, Clone)]
+pub struct StaticResponse {
+    status: http::StatusCode,
+    headers: HeaderMap,
+    body: Bytes,
+}
+
+impl TryFrom<crate::config::http::StaticResponseConfig> for StaticResponse {
+    type Error = HttpStaticError;
+
+    fn try_from(value: crate::config::http::StaticResponseConfig) -> Result<Self, Self::Error> {
+        use crate::config::http::*;
+        use bytes::Bytes;
+        use bytes::{BufMut, BytesMut};
+        use http::{
+            header::HeaderName, header::CONTENT_TYPE, HeaderMap, HeaderValue, Method, Response,
+            StatusCode,
+        };
+        use regex::Regex;
+        use std::io::Write;
+
+        let status_code = StatusCode::from_u16(value.status)?;
+
+        let mut headers = HeaderMap::new();
+
+        let response_body = {
+            let mut writer = BytesMut::new().writer();
+            match value.body {
+                None => {}
+                Some(StaticResponseBodyConfig::Json { json }) => {
+                    headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
+                    let body = serde_json::to_vec(&json)?;
+                    writer.write_all(&body)?;
+                }
+                Some(StaticResponseBodyConfig::Raw { bytes }) => {
+                    writer.write_all(bytes.as_bytes())?;
+                }
+            }
+            writer.into_inner().freeze()
+        };
+
+        {
+            for (name, value) in &value.headers {
+                headers.insert(
+                    HeaderName::from_bytes(name.as_bytes())?,
+                    HeaderValue::from_bytes(value.as_bytes())?,
+                );
+            }
+        }
+
+        Ok(StaticResponse {
+            status: status_code,
+            headers,
+            body: response_body,
+        })
+    }
+}
+
+impl StaticResponse {
+    fn make_response(&self, id: &str) -> Response<Bytes> {
+        use http::header::{HeaderName, HeaderValue};
+        let mut builder = Response::builder().status(self.status);
+
+        {
+            if let Some(headers) = builder.headers_mut() {
+                headers.clone_from(&self.headers);
+                let value = match HeaderValue::from_bytes(id.as_bytes()) {
+                    Ok(value) => value,
+                    Err(_) => HeaderValue::from_static("plugin id invalid header"),
+                };
+                headers.insert(HeaderName::from_static("x-dev-null-plugin-id"), value);
+            }
+        }
+
+        builder.body(self.body.clone()).unwrap()
+    }
+}

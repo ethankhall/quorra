@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 use tracing::{debug, instrument};
 
+use super::StaticResponse;
 use crate::config::http::http_static::*;
 use crate::errors::*;
 use crate::plugin::HttpPlugin;
@@ -44,73 +45,6 @@ impl TryFrom<StaticHttpConfig> for StaticContainer {
             response,
             matchers: matchers?,
         })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct StaticResponse {
-    status: http::StatusCode,
-    headers: HeaderMap,
-    body: Bytes,
-}
-
-impl TryFrom<StaticHttpResponseConfig> for StaticResponse {
-    type Error = HttpStaticError;
-
-    fn try_from(value: StaticHttpResponseConfig) -> Result<Self, Self::Error> {
-        let status_code = StatusCode::from_u16(value.status)?;
-
-        let mut headers = HeaderMap::new();
-
-        let response_body = {
-            let mut writer = BytesMut::new().writer();
-            match value.body {
-                None => {}
-                Some(StaticHttpResponseBodyConfig::Json { json }) => {
-                    headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
-                    let body = serde_json::to_vec(&json)?;
-                    writer.write_all(&body)?;
-                }
-                Some(StaticHttpResponseBodyConfig::Raw { bytes }) => {
-                    writer.write_all(bytes.as_bytes())?;
-                }
-            }
-            writer.into_inner().freeze()
-        };
-
-        {
-            for (name, value) in &value.headers {
-                headers.insert(
-                    HeaderName::from_bytes(name.as_bytes())?,
-                    HeaderValue::from_bytes(value.as_bytes())?,
-                );
-            }
-        }
-
-        Ok(StaticResponse {
-            status: status_code,
-            headers,
-            body: response_body,
-        })
-    }
-}
-
-impl From<&StaticContainer> for Response<Bytes> {
-    fn from(value: &StaticContainer) -> Self {
-        let mut builder = Response::builder().status(value.response.status);
-
-        {
-            if let Some(headers) = builder.headers_mut() {
-                headers.clone_from(&value.response.headers);
-                let value = match HeaderValue::from_bytes(value.id.as_bytes()) {
-                    Ok(value) => value,
-                    Err(_) => HeaderValue::from_static("plugin id invalid header"),
-                };
-                headers.insert(HeaderName::from_static("x-dev-null-plugin-id"), value);
-            }
-        }
-
-        builder.body(value.response.body.clone()).unwrap()
     }
 }
 
@@ -288,7 +222,7 @@ impl HttpPlugin for HttpStaticPlugin {
     ) -> Option<Response<Bytes>> {
         for container in &self.static_containers {
             if container.matches(method, uri, headers) {
-                return Some(Response::from(container));
+                return Some(container.response.make_response(&container.id));
             }
         }
 
