@@ -3,6 +3,7 @@
 `/dev/null` works on plugins. The app itself, is very dump, _you_ are the one who makes it intelligent.
 
 In order to allow develoeprs to work with their own use-cases, `/dev/null` provides three plugins:
+
 - [Static Content](./plugin/static-response.md)
 - [Lua](./plugin/lua.md)
 - [WASM](./plugin/wasm.md)
