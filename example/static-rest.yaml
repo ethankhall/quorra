@@ -6,11 +6,16 @@ http:
       methods:
        - GET
     response:
-      headers: {}
-      body:
-        type: json
-        json: {}
-      status: 200
+      - headers: {}
+        body:
+          type: json
+          json: {}
+        status: 200
+        weight: 100
+      - body:
+          type: json
+          json: {}
+        status: 500
 # graphql:
 #   - matches:
 #     - path: /foo/bar

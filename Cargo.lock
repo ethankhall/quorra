@@ -330,6 +330,7 @@ dependencies = [
  "notify",
  "opentelemetry",
  "opentelemetry-otlp",
+ "rand",
  "regex",
  "serde",
  "serde_json",

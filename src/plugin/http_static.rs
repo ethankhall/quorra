@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 use tracing::{debug, instrument};
 
-use super::StaticResponse;
+use super::StaticResponseContainer;
 use crate::config::http::http_static::*;
 use crate::errors::*;
 use crate::plugin::HttpPlugin;
@@ -12,12 +12,11 @@ use http::{header::HeaderName, HeaderMap, Method, Response};
 
 use regex::Regex;
 
-
 #[derive(Debug, Clone)]
 pub struct StaticContainer {
     id: String,
     matchers: Vec<RequestMatcher>,
-    response: StaticResponse,
+    responses: StaticResponseContainer,
 }
 
 impl StaticContainer {
@@ -33,7 +32,7 @@ impl TryFrom<StaticHttpConfig> for StaticContainer {
     type Error = HttpStaticError;
 
     fn try_from(config: StaticHttpConfig) -> Result<Self, Self::Error> {
-        let response: StaticResponse = config.response.try_into()?;
+        let responses: StaticResponseContainer = config.response.try_into()?;
         let matchers: Result<Vec<_>, _> = config
             .matches
             .iter()
@@ -42,7 +41,7 @@ impl TryFrom<StaticHttpConfig> for StaticContainer {
 
         Ok(Self {
             id: config.id,
-            response,
+            responses,
             matchers: matchers?,
         })
     }
@@ -222,7 +221,12 @@ impl HttpPlugin for HttpStaticPlugin {
     ) -> Option<Response<Bytes>> {
         for container in &self.static_containers {
             if container.matches(method, uri, headers) {
-                return Some(container.response.make_response(&container.id));
+                return Some(
+                    container
+                        .responses
+                        .get_response()
+                        .make_response(&container.id),
+                );
             }
         }
 

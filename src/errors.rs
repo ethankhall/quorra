@@ -26,4 +26,6 @@ pub enum HttpStaticError {
     InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
     #[error(transparent)]
     InvalidMethod(#[from] http::method::InvalidMethod),
+    #[error("No respone configured for match")]
+    NoResponsesProvided,
 }

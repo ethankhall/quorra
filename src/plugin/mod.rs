@@ -4,8 +4,13 @@ use crate::errors::*;
 use async_trait::async_trait;
 use bytes::Bytes;
 use http::{HeaderMap, Method, Response};
+use rand::{seq::SliceRandom, thread_rng};
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
 mod http_backend;
 mod http_static;
@@ -103,24 +108,74 @@ pub fn create_http_backend(
 }
 
 #[derive(Debug, Clone)]
+pub struct StaticResponseContainer {
+    pub pointer: Arc<AtomicUsize>,
+    pub responses: Vec<Arc<StaticResponse>>,
+}
+
+impl StaticResponseContainer {
+    pub fn get_response(&self) -> &StaticResponse {
+        let response_lenght = self.responses.len();
+        let value = match self
+            .pointer
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |value| {
+                Some((value + 1) % response_lenght)
+            }) {
+            Ok(value) => value,
+            Err(value) => value,
+        };
+
+        self.responses.get(value).unwrap()
+    }
+}
+
+impl TryFrom<Vec<crate::config::http::StaticResponseConfig>> for StaticResponseContainer {
+    type Error = HttpStaticError;
+    fn try_from(
+        configs: Vec<crate::config::http::StaticResponseConfig>,
+    ) -> Result<Self, Self::Error> {
+        let mut configs = configs.clone();
+        configs.sort_by(|a, b| a.weight.cmp(&b.weight));
+
+        let mut responses = Vec::new();
+
+        for config in &configs {
+            let static_response = config.try_into()?;
+            let static_response: Arc<StaticResponse> = Arc::new(static_response);
+            for _i in 0..config.weight {
+                responses.push(static_response.clone());
+            }
+        }
+
+        responses.shuffle(&mut thread_rng());
+
+        if responses.is_empty() {
+            return Err(HttpStaticError::NoResponsesProvided);
+        }
+
+        Ok(Self {
+            pointer: Arc::new(AtomicUsize::new(0)),
+            responses,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct StaticResponse {
     status: http::StatusCode,
     headers: HeaderMap,
     body: Bytes,
 }
 
-impl TryFrom<crate::config::http::StaticResponseConfig> for StaticResponse {
+impl TryFrom<&crate::config::http::StaticResponseConfig> for StaticResponse {
     type Error = HttpStaticError;
 
-    fn try_from(value: crate::config::http::StaticResponseConfig) -> Result<Self, Self::Error> {
+    fn try_from(value: &crate::config::http::StaticResponseConfig) -> Result<Self, Self::Error> {
         use crate::config::http::*;
-        
+
         use bytes::{BufMut, BytesMut};
-        use http::{
-            header::HeaderName, header::CONTENT_TYPE, HeaderValue,
-            StatusCode,
-        };
-        
+        use http::{header::HeaderName, header::CONTENT_TYPE, HeaderValue, StatusCode};
+
         use std::io::Write;
 
         let status_code = StatusCode::from_u16(value.status)?;
@@ -129,7 +184,7 @@ impl TryFrom<crate::config::http::StaticResponseConfig> for StaticResponse {
 
         let response_body = {
             let mut writer = BytesMut::new().writer();
-            match value.body {
+            match &value.body {
                 None => {}
                 Some(StaticResponseBodyConfig::Json { json }) => {
                     headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));

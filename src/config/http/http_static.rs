@@ -18,7 +18,7 @@ pub struct StaticHttpConfig {
     #[serde(default = "crate::unique_id")]
     pub id: String,
     pub matches: Vec<StaticMatchesConfig>,
-    pub response: StaticResponseConfig,
+    pub response: Vec<StaticResponseConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
