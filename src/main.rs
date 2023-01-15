@@ -74,6 +74,14 @@ async fn run_app(cli: Opts) -> Result<(), anyhow::Error> {
             HeaderName::from_static("x-dev-null-plugin-id"),
             HeaderValue::from_static("null"),
         ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            HeaderName::from_static("x-dev-null-payload-id"),
+            HeaderValue::from_static("null"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            HeaderName::from_static("x-dev-null-response-id"),
+            HeaderValue::from_static("null"),
+        ))
         // Propagate `X-Request-Id`s from requests to responses
         .layer(PropagateHeaderLayer::new(HeaderName::from_static(
             "x-request-id",

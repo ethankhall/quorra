@@ -38,7 +38,7 @@ impl TryFrom<StaticHttpConfig> for StaticContainer {
     type Error = HttpStaticError;
 
     fn try_from(config: StaticHttpConfig) -> Result<Self, Self::Error> {
-        let responses: StaticResponseContainer = config.response.try_into()?;
+        let responses: StaticResponseContainer = config.responses.try_into()?;
         let matchers: Result<Vec<_>, _> = config
             .matches
             .iter()
@@ -293,7 +293,7 @@ impl HttpPlugin for HttpStaticPlugin {
                     container
                         .responses
                         .get_response()
-                        .make_response(&container.id),
+                        .make_response(&self.id, &container.id),
                 );
             }
         }

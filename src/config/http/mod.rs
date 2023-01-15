@@ -10,6 +10,8 @@ fn default_weight() -> u16 {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StaticResponseConfig {
+    #[serde(default = "crate::unique_id")]
+    pub id: String,
     #[serde(default = "default_weight")]
     pub weight: u16,
     pub status: u16,

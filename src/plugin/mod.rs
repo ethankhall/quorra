@@ -11,6 +11,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
+use tracing::instrument;
 
 mod http_backend;
 mod http_static;
@@ -205,6 +206,12 @@ impl TryFrom<&crate::config::http::StaticResponseConfig> for StaticResponse {
                     HeaderValue::from_bytes(value.as_bytes())?,
                 );
             }
+
+            let plugin_id = match HeaderValue::from_str(&value.id) {
+                Ok(value) => value,
+                Err(_) => HeaderValue::from_static("response id invalid header"),
+            };
+            headers.insert(HeaderName::from_static("x-dev-null-response-id"), plugin_id);
         }
 
         Ok(StaticResponse {
@@ -216,18 +223,25 @@ impl TryFrom<&crate::config::http::StaticResponseConfig> for StaticResponse {
 }
 
 impl StaticResponse {
-    fn make_response(&self, id: &str) -> Response<Bytes> {
+    #[instrument(skip_all, fields(plugin.id = plugin_id, payload.id = payload_id))]
+    fn make_response(&self, plugin_id: &str, payload_id: &str) -> Response<Bytes> {
         use http::header::{HeaderName, HeaderValue};
         let mut builder = Response::builder().status(self.status);
 
         {
             if let Some(headers) = builder.headers_mut() {
                 headers.clone_from(&self.headers);
-                let value = match HeaderValue::from_bytes(id.as_bytes()) {
+                let plugin_id = match HeaderValue::from_bytes(plugin_id.as_bytes()) {
                     Ok(value) => value,
                     Err(_) => HeaderValue::from_static("plugin id invalid header"),
                 };
-                headers.insert(HeaderName::from_static("x-dev-null-plugin-id"), value);
+                headers.insert(HeaderName::from_static("x-dev-null-plugin-id"), plugin_id);
+
+                let payload_id = match HeaderValue::from_bytes(payload_id.as_bytes()) {
+                    Ok(value) => value,
+                    Err(_) => HeaderValue::from_static("payload id invalid header"),
+                };
+                headers.insert(HeaderName::from_static("x-dev-null-payload-id"), payload_id);
             }
         }
 

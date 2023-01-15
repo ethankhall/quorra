@@ -5,7 +5,7 @@ http:
         host: localhost
       methods:
        - GET
-    response:
+    responses:
       - headers: {}
         body:
           type: json
@@ -22,7 +22,7 @@ http:
        - POST
       graphql:  
         operation-name: coolQuery
-    response:
+    responses:
       - headers: {}
         body:
           type: json
