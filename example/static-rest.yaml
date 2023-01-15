@@ -11,20 +11,20 @@ http:
           type: json
           json: {}
         status: 200
-        weight: 100
+        weight: 5
       - body:
           type: json
           json: {}
         status: 500
-# graphql:
-#   - matches:
-#     - path: /foo/bar
-#       headers:
-#         host: localhost
-#       operationName: foo-bar
-#     response:
-#       headers: {}
-#       body:
-#         type: json
-#         json: {}
-#       status: 200
+  - matches:
+    - path: /graphql
+      methods:
+       - POST
+      graphql:  
+        operation-name: coolQuery
+    response:
+      - headers: {}
+        body:
+          type: json
+          json: {}
+        status: 200

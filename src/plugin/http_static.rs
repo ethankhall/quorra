@@ -21,10 +21,16 @@ pub struct StaticContainer {
 
 impl StaticContainer {
     #[instrument(skip_all, fields(container.id = self.id))]
-    fn matches(&self, method: &Method, uri: &str, headers: &HeaderMap) -> bool {
+    fn matches(
+        &self,
+        method: &Method,
+        uri: &str,
+        headers: &HeaderMap,
+        body: &Option<&Bytes>,
+    ) -> bool {
         self.matchers
             .iter()
-            .any(|x| x.request_matches(method, uri, headers))
+            .any(|x| x.request_matches(method, uri, headers, body))
     }
 }
 
@@ -52,6 +58,7 @@ pub struct RequestMatcher {
     pub methods: Vec<Method>,
     pub path: Option<Regex>,
     pub headers: Vec<HeaderMatcher>,
+    pub graphql_operations: Option<Regex>,
 }
 
 impl RequestMatcher {
@@ -59,6 +66,7 @@ impl RequestMatcher {
         methods: &Vec<String>,
         path: &Option<String>,
         headers: &BTreeMap<String, String>,
+        graphql_operations: &Option<String>,
     ) -> Result<Self, HttpStaticError> {
         let matched_path = match &path {
             Some(path) => Some(Regex::new(&format!("^{}$", &path))?),
@@ -74,18 +82,29 @@ impl RequestMatcher {
             parsed_methods.push(Method::from_bytes(method.as_bytes())?);
         }
 
+        let matched_graphql = match graphql_operations {
+            None => None,
+            Some(operation) => Some(Regex::new(&operation)?),
+        };
+
         Ok(Self {
             path: matched_path,
             headers: matched_headers,
             methods: parsed_methods,
+            graphql_operations: matched_graphql,
         })
     }
 
-    fn request_matches(&self, method: &Method, uri: &str, headers: &HeaderMap) -> bool {
+    fn request_matches(
+        &self,
+        method: &Method,
+        uri: &str,
+        headers: &HeaderMap,
+        body: &Option<&Bytes>,
+    ) -> bool {
         if !self.methods.is_empty() && !self.methods.contains(method) {
             return false;
         }
-
         debug!("Matched method");
 
         if let Some(path) = &self.path {
@@ -93,15 +112,55 @@ impl RequestMatcher {
                 return false;
             }
         }
-
         debug!("Matched uri");
 
-        if self.headers.is_empty() {
-            return true;
+        if !self.matches_headers(headers) {
+            return false;
+        }
+        debug!("Matched headers");
+
+        if !self.match_graphql_operation(body) {
+            return false;
         }
 
+        debug!("Matched Body");
+
+        true
+    }
+
+    fn match_graphql_operation(&self, body: &Option<&Bytes>) -> bool {
+        let matcher = match &self.graphql_operations {
+            None => return true,
+            Some(matcher) => matcher,
+        };
+
+        match body {
+            None => false,
+            Some(body) => {
+                let body_text = match String::from_utf8(body.to_vec()) {
+                    Ok(body) => body,
+                    Err(_e) => {
+                        debug!("Unable to extract string from body of request");
+                        return false;
+                    }
+                };
+                match json::parse(&body_text) {
+                    Err(_) => false,
+                    Ok(body) => {
+                        debug!("body[operationName] = {:?}", body["operationName"]);
+                        match &body["operationName"].as_str() {
+                            Some(name) => matcher.is_match(name),
+                            None => false,
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn matches_headers(&self, request_headers: &HeaderMap) -> bool {
         self.headers.iter().all(|header_matcher| {
-            let values = headers.get_all(&header_matcher.name);
+            let values = request_headers.get_all(&header_matcher.name);
             values.iter().any(|value| {
                 header_matcher
                     .value
@@ -115,7 +174,13 @@ impl TryFrom<&StaticMatchesConfig> for RequestMatcher {
     type Error = HttpStaticError;
 
     fn try_from(config: &StaticMatchesConfig) -> Result<Self, Self::Error> {
-        RequestMatcher::new(&config.methods, &config.path, &config.headers)
+        let gql_operations = config.graphql.clone().map(|x| x.operation_name);
+        RequestMatcher::new(
+            &config.methods,
+            &config.path,
+            &config.headers,
+            &gql_operations,
+        )
     }
 }
 
@@ -125,20 +190,21 @@ fn test_request_matcher_empty() {
         &Default::default(),
         &Default::default(),
         &Default::default(),
+        &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::OPTIONS, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::GET, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::PUT, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::DELETE, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::HEAD, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::TRACE, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::OPTIONS, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::GET, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::PUT, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::DELETE, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::HEAD, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::TRACE, "", &Default::default(), &None));
 
-    assert!(matcher.request_matches(&Method::POST, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::CONNECT, "", &Default::default()));
-    assert!(matcher.request_matches(&Method::PATCH, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::POST, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::CONNECT, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::PATCH, "", &Default::default(), &None));
 
-    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default()));
+    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default(), &None));
 }
 
 #[test]
@@ -147,10 +213,11 @@ fn test_request_matcher_method() {
         &vec!["GET".to_owned()],
         &Default::default(),
         &Default::default(),
+        &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::GET, "", &Default::default()));
-    assert!(!matcher.request_matches(&Method::PUT, "", &Default::default()));
+    assert!(matcher.request_matches(&Method::GET, "", &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::PUT, "", &Default::default(), &None));
 }
 
 #[test]
@@ -159,11 +226,12 @@ fn test_request_matcher_path() {
         &Default::default(),
         &Some("/foo/bar".to_owned()),
         &Default::default(),
+        &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default()));
-    assert!(!matcher.request_matches(&Method::GET, "/foo/barasdfa", &Default::default()));
-    assert!(!matcher.request_matches(&Method::GET, "/foo/bar/", &Default::default()));
+    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::GET, "/foo/barasdfa", &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::GET, "/foo/bar/", &Default::default(), &None));
 }
 
 #[derive(Debug, Clone)]
@@ -217,10 +285,10 @@ impl HttpPlugin for HttpStaticPlugin {
         method: &Method,
         uri: &str,
         headers: &HeaderMap,
-        _body: &Option<&Bytes>,
+        body: &Option<&Bytes>,
     ) -> Option<Response<Bytes>> {
         for container in &self.static_containers {
-            if container.matches(method, uri, headers) {
+            if container.matches(method, uri, headers, body) {
                 return Some(
                     container
                         .responses

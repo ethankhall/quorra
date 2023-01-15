@@ -14,6 +14,7 @@ pub struct StaticPluginConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
 pub struct StaticHttpConfig {
     #[serde(default = "crate::unique_id")]
     pub id: String,
@@ -22,6 +23,7 @@ pub struct StaticHttpConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
 pub struct StaticMatchesConfig {
     #[serde(default)]
     pub path: Option<String>,
@@ -31,6 +33,16 @@ pub struct StaticMatchesConfig {
 
     #[serde(default)]
     pub methods: Vec<String>,
+
+    #[serde(default)]
+    pub graphql: Option<GraphqlStaticMatchConfig>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct GraphqlStaticMatchConfig {
+    #[serde(default)]
+    pub operation_name: String,
 }
 
 pub fn parse(path: PathBuf) -> Result<StaticPluginConfig, HttpStaticError> {
