@@ -148,9 +148,9 @@ impl StaticResponseContainer {
     fn try_from(
         plugin_id: &str,
         payload_id: &str,
-        configs: &Vec<StaticResponseConfig>,
+        configs: &[StaticResponseConfig],
     ) -> Result<Self, HttpPluginError> {
-        let mut configs = configs.clone();
+        let mut configs = configs.to_owned();
         configs.sort_by(|a, b| a.weight.cmp(&b.weight));
 
         let mut responses = Vec::new();
@@ -231,7 +231,7 @@ impl StaticResponse {
 }
 
 fn add_header(headers: &mut HeaderMap, name: &str, value: &str) {
-    let value = match HeaderValue::from_str(&value) {
+    let value = match HeaderValue::from_str(value) {
         Ok(value) => value,
         Err(_) => HeaderValue::from_str(&format!("{} invalid header", name)).unwrap(),
     };

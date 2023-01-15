@@ -46,7 +46,7 @@ pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
 
     Ok(ServerConfig {
         http_address: user_config.http.address,
-        http_plugins: http_plugins,
+        http_plugins,
     })
 }
 

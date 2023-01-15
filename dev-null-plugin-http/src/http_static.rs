@@ -1,14 +1,11 @@
-use figment::Figment;
-use std::{collections::BTreeMap, str::FromStr, sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 use tracing::{debug, instrument};
 
-use crate::{config::internal::*, HttpPluginError};
+use crate::config::internal::*;
 use async_trait::async_trait;
 use bytes::Bytes;
 
-use http::{header::HeaderName, HeaderMap, Method, Response};
-
-use regex::Regex;
+use http::{HeaderMap, Method, Response};
 
 impl StaticResponse {
     #[instrument(skip_all, fields(plugin.id = plugin_id, payload.id = payload_id))]

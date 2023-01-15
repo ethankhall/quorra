@@ -15,7 +15,7 @@ pub async fn load_http_plugin_config(
     config_dir: &Path,
 ) -> Result<internal::PluginBackendConfig, crate::HttpPluginError> {
     let config_path = if plugin_def.config_path.is_absolute() {
-        plugin_def.config_path.clone()
+        plugin_def.config_path
     } else {
         config_dir.join(plugin_def.config_path)
     };
@@ -24,5 +24,5 @@ pub async fn load_http_plugin_config(
     debug!("Loaded config to be {:?}", figment);
     let public_config: StaticPluginConfig = figment.extract()?;
 
-    Ok(internal::PluginBackendConfig::try_from(public_config)?)
+    internal::PluginBackendConfig::try_from(public_config)
 }
