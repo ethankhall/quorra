@@ -28,7 +28,7 @@ pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
 
     debug!("Loading config file {}", config_path.display());
 
-    let figment = Figment::new().merge(Toml::file(&config_path));
+    let figment = Figment::new().merge(Toml::file(config_path));
     let user_config: user::UserConfig = figment.extract()?;
 
     debug!("Loaded config {:?}", user_config);
