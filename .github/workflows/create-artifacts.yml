@@ -28,7 +28,7 @@ jobs:
         run: |
           docker buildx build \
             --output=type=registry \
-            --file Dockerfile 
+            --file Dockerfile \
             --tag docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD) \
             --tag docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }} \
             .
