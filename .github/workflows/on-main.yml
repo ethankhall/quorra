@@ -27,7 +27,7 @@ jobs:
         run: |
           VERSION=$(docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest get next-release)
           gh release create $VERSION --generate-notes --prerelease --target $(git rev-parse HEAD) --draft
-          echo "::set-output name=version::$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
   publish:
     uses: ./.github/workflows/create-artifacts.yml
     needs: create-release
