@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1.4
 FROM rust:bullseye as chef
 COPY rust-toolchain.toml rust-toolchain.toml
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --build-arg BUILDKIT_INLINE_CACHE=1 <<EOT
+RUN --mount=type=cache,target=/usr/local/cargo/registry <<EOT
 #!/usr/bin/env bash
 set -euxo pipefail
 
@@ -18,7 +17,6 @@ COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target/release/deps \
     --mount=type=cache,target=/app/target/release/build \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
     cargo chef prepare  --recipe-path recipe.json
 
 FROM chef AS builder
@@ -27,15 +25,13 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target/release/deps \
     --mount=type=cache,target=/app/target/release/build \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
     cargo chef cook --release --recipe-path recipe.json
 COPY . .
 
 FROM builder as test
 RUN --mount=type=cache,target=/usr/local/cargo/registry  \
     --mount=type=cache,target=/app/target/release/deps \
-    --mount=type=cache,target=/app/target/release/build \
-    --build-arg BUILDKIT_INLINE_CACHE=1 <<EOT
+    --mount=type=cache,target=/app/target/release/build <<EOT
 #!/usr/bin/env bash
 set -euxo pipefail
 
@@ -51,7 +47,6 @@ FROM builder as release
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target/release/deps \
     --mount=type=cache,target=/app/target/release/build \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
      cargo build --release --bin dev-null
 RUN /app/target/release/dev-null --help
 

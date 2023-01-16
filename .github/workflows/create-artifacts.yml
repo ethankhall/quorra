@@ -38,4 +38,5 @@ jobs:
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --tag ghcr.io/ethankhall/dev-null:$(git rev-parse --short HEAD) \
             --tag ghcr.io/ethankhall/dev-null:${{ inputs.version }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
             .

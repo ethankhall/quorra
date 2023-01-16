@@ -82,4 +82,5 @@ jobs:
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate \
             --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
             --target test .
