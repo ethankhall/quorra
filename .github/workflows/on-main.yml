@@ -57,10 +57,10 @@ jobs:
       - name: Update latest tag
         run: |
           set -e
-          docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
-          docker pull docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ needs.create-release.outputs.version }}
-          docker tag docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ needs.create-release.outputs.version }} docker.pkg.github.com/ethankhall/dev-null/dev-null:latest
-          docker push docker.pkg.github.com/ethankhall/dev-null/dev-null:latest
+          docker login ghcr.io --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
+          docker pull ghcr.io/ethankhall/dev-null:${{ needs.create-release.outputs.version }}
+          docker tag ghcr.io/ethankhall/dev-null:${{ needs.create-release.outputs.version }} ghcr.io/ethankhall/dev-null:latest
+          docker push ghcr.io/ethankhall/dev-null:latest
 
   check:
     name: Run Validates
