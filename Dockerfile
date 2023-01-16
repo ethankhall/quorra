@@ -39,6 +39,8 @@ RUN <<EOT
 #!/usr/bin/env bash
 set -euxo pipefail
 
+rustup component add rustfmt
+
 cargo test --release
 cargo fmt --check
 cargo clippy --release
