@@ -9,6 +9,7 @@ on:
 
 permissions:
   packages: write
+  contents: read
 
 jobs:
   build-docker:
@@ -17,6 +18,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: Configure version
         run: |
           docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
