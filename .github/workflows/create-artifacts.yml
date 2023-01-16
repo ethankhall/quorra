@@ -26,12 +26,9 @@ jobs:
           docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
       - name: Build local image
         run: |
-          docker build . --file Dockerfile --tag dev-null
-          docker run --rm dev-null /app/dev-null --help
-      - name: push to registry
-        run: |
-          set -e
-          docker tag dev-null docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD)
-          docker tag dev-null docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }}
-          docker push docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD)
-          docker push docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }}
+          docker buildx build \
+            --output=type=registry \
+            --file Dockerfile 
+            --tag docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD) \
+            --tag docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }} \
+            .

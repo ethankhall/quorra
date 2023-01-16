@@ -26,8 +26,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target/release/deps \
     --mount=type=cache,target=/app/target/release/build \
     cargo chef cook --release --recipe-path recipe.json
-# Build application
-COPY dev-null dev-null-plugin dev-null-plugin-http Cargo.toml Cargo.lock rust-toolchain.toml /app/
+COPY . .
 
 FROM builder as test
 RUN --mount=type=cache,target=/usr/local/cargo/registry  \
@@ -36,10 +35,12 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry  \
 #!/usr/bin/env bash
 set -euxo pipefail
 
-cargo test
+cargo test --release
 cargo fmt --check
-cargo clippy
-cargo +nightly udeps
+cargo clippy --release
+rustup toolchain install nightly --allow-downgrade --profile minimal
+cargo +nightly install cargo-udeps --locked
+cargo +nightly udeps --release
 EOT
 
 FROM builder as release
@@ -47,8 +48,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target/release/deps \
     --mount=type=cache,target=/app/target/release/build \
      cargo build --release --bin dev-null
-RUN pwd
-RUN ls -al target/release
+RUN /app/target/release/dev-null --help
 
 FROM debian:bullseye-slim AS runtime
 RUN apt-get update && apt-get install tini -y
