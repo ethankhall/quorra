@@ -25,7 +25,6 @@ jobs:
           docker buildx build \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate \
-            --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate,mode=max \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --target check .
 
