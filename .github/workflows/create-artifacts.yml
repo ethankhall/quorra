@@ -20,15 +20,22 @@ jobs:
           fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure version
         run: |
-          docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
-          docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
+          docker run --rm -v $(pwd):/target ghcr.io/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
       - name: Build local image
         run: |
           docker buildx build \
             --output=type=registry \
             --file Dockerfile \
-            --tag docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD) \
-            --tag docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }} \
+            --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
+            --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
+            --tag ghcr.io/ethankhall/dev-null:$(git rev-parse --short HEAD) \
+            --tag ghcr.io/ethankhall/dev-null:${{ inputs.version }} \
             .

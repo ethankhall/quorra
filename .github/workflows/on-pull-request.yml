@@ -7,6 +7,16 @@ permissions:
   packages: read
 
 jobs:
+  check:
+    name: Run Validations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: validate artifact
+        run: docker buildx build --target test .
+
   create-release:
     needs:
       - check
@@ -33,16 +43,6 @@ jobs:
     needs: create-release
     with:
       version: ${{ needs.create-release.outputs.version }}
-
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: validate artifact
-        run: docker buildx build --target test .
 
   remove-draft:
     runs-on: ubuntu-latest

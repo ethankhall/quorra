@@ -63,7 +63,7 @@ jobs:
           docker push docker.pkg.github.com/ethankhall/dev-null/dev-null:latest
 
   check:
-    name: Check
+    name: Run Validates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
