@@ -7,10 +7,6 @@ on:
         required: true
         type: string
 
-permissions:
-  packages: write
-  contents: read
-
 jobs:
   build-docker:
     runs-on: ubuntu-latest
@@ -29,7 +25,8 @@ jobs:
       - name: Configure version
         run: |
           docker run --rm -v $(pwd):/target ghcr.io/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
-      - name: Build local image
+      - name: Build local image - with cache update
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           docker buildx build \
             --output=type=registry \
@@ -38,5 +35,13 @@ jobs:
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --tag ghcr.io/ethankhall/dev-null:$(git rev-parse --short HEAD) \
             --tag ghcr.io/ethankhall/dev-null:${{ inputs.version }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+      - name: Build local image
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          docker buildx build \
+            --file Dockerfile \
+            --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
