@@ -34,7 +34,7 @@ jobs:
           docker buildx build \
             --output=type=registry \
             --file Dockerfile \
-            --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
+            --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache,mode=max \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --tag ghcr.io/ethankhall/dev-null:$(git rev-parse --short HEAD) \
             --tag ghcr.io/ethankhall/dev-null:${{ inputs.version }} \
