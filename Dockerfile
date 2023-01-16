@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.4
 FROM rust:bullseye as chef
 COPY rust-toolchain.toml rust-toolchain.toml
-RUN --mount=type=cache,target=/usr/local/cargo/registry <<EOT
+RUN <<EOT
 #!/usr/bin/env bash
 set -euxo pipefail
 
@@ -14,40 +14,42 @@ WORKDIR /app
 
 FROM chef AS planner
 COPY . .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target/release/deps \
-    --mount=type=cache,target=/app/target/release/build \
-    cargo chef prepare  --recipe-path recipe.json
+RUN cargo chef prepare  --recipe-path recipe.json
 
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target/release/deps \
-    --mount=type=cache,target=/app/target/release/build \
-    cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 
+FROM builder as dep_check
+RUN rustup toolchain install nightly --allow-downgrade --profile minimal
+
+RUN <<EOT
+#!/usr/bin/env bash
+set -euxo pipefail
+
+cargo +nightly build --release
+cargo +nightly install cargo-udeps --locked
+cargo +nightly udeps --release
+EOT
+
 FROM builder as test
-RUN --mount=type=cache,target=/usr/local/cargo/registry  \
-    --mount=type=cache,target=/app/target/release/deps \
-    --mount=type=cache,target=/app/target/release/build <<EOT
+RUN <<EOT
 #!/usr/bin/env bash
 set -euxo pipefail
 
 cargo test --release
 cargo fmt --check
 cargo clippy --release
-rustup toolchain install nightly --allow-downgrade --profile minimal
-cargo +nightly install cargo-udeps --locked
-cargo +nightly udeps --release
 EOT
 
+FROM scratch as check
+COPY --from=dep_check /app/recipe.json recipe-dep-check.json
+COPY --from=test /app/recipe.json recipe-test.json
+
 FROM builder as release
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target/release/deps \
-    --mount=type=cache,target=/app/target/release/build \
-     cargo build --release --bin dev-null
+RUN cargo build --release --bin dev-null
 RUN /app/target/release/dev-null --help
 
 FROM debian:bullseye-slim AS runtime
