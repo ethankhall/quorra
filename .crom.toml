@@ -1,0 +1,4 @@
+pattern = 'v0.1.%d'
+message-template = "Created {version} for release."
+
+[cargo]

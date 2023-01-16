@@ -1,0 +1,31 @@
+name: Publish Image
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Configure version
+        run: |
+          docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
+          docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
+      - name: Build local image
+        run: |
+          docker build . --file Dockerfile --tag dev-null
+          docker run --rm dev-null /app/dev-null --help
+      - name: push to registry
+        run: |
+          set -e
+          docker tag dev-null docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD)
+          docker tag dev-null docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }}
+          docker push docker.pkg.github.com/ethankhall/dev-null/dev-null:$(git rev-parse --short HEAD)
+          docker push docker.pkg.github.com/ethankhall/dev-null/dev-null:${{ inputs.version }}
