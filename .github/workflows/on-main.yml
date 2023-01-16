@@ -70,4 +70,4 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: validate artifact
-        run: docker buildx build --target test .
+        run: docker buildx build --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache --target test .
