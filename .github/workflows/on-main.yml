@@ -52,6 +52,7 @@ jobs:
   tag-latest:
     runs-on: ubuntu-latest
     needs:
+      - create-release
       - remove-draft
     steps:
       - name: Update latest tag
