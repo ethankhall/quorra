@@ -196,21 +196,17 @@ source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quo
 <p>Next create <code>./static-rest.yaml</code> with the contents</p>
 <pre><code class="language-yaml">http:
   - matches:
-    - path: /api/v1/foo
-      headers:
-        host: localhost
-      methods:
-       - GET
+    - path: /echo
     responses:
       - headers: {}
         body:
-          type: json
-          json: {}
+          type: raw
+          data: '{{ request_body }}'
         status: 200
         weight: 5
       - body:
           type: raw
-          bytes: '{}'
+          data: '{}'
         status: 500
   - matches:
     - path: /graphql
@@ -222,11 +218,28 @@ source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quo
       - headers: {}
         body:
           type: json
-          json: {}
+          data: |
+            {
+              &quot;uuid&quot;: &quot;{{ uuid }}&quot;,
+              &quot;id&quot;: {{ id }}
+            }
         status: 200
 </code></pre>
+<p>In this example two endpoints will be registered.</p>
+<p>The first <code>/echo</code>, which will respond with the request body 5-1 times, the 1 time will be a 500.
+The second is <code>/graphql</code>, which matches the the operationName is <code>coolQuery</code>, and will respond with a JSON object containing <code>uuid</code> and <code>id</code>.</p>
 <h3 id="pro-tip-1"><a class="header" href="#pro-tip-1">Pro Tip</a></h3>
 <p>In production we recommend setting ID's to something useful. That way when you are unsure about where a response came from you can trace it by the response headers.</p>
+<h2 id="magic-values"><a class="header" href="#magic-values">Magic Values</a></h2>
+<p>We use Handlebars to add dynamic values to the response. This is most often used with ID responses.</p>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>uuid</code></td><td>A random UUID Version 4</td></tr>
+<tr><td><code>id</code></td><td>A sequential unsigned number. This value will reset when <code>/dev/null</code> restarts.</td></tr>
+<tr><td><code>dev_null_plugin_id</code></td><td>The Plugin Id that matched</td></tr>
+<tr><td><code>dev_null_payload_id</code></td><td>The Payload Id that matched</td></tr>
+<tr><td><code>request_body</code></td><td>The entire request body</td></tr>
+</tbody></table>
+</div>
 <h2 id="file-structure"><a class="header" href="#file-structure">File structure</a></h2>
 <p>At the moment, <code>/dev/null</code> only supports http requests, so all entries are under <code>http</code>.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
@@ -257,8 +270,7 @@ source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quo
 <tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-payload-id</code> header</td></tr>
 <tr><td><code>headers</code></td><td>Optional, when set a key-value list of headers that will be included in the response</td></tr>
 <tr><td><code>body.type</code></td><td>Either <code>json</code> or <code>raw</code> depending on the data being responded with</td></tr>
-<tr><td><code>body.json</code></td><td>Required when <code>body.type</code> is <code>json</code>. This must be a valid JSON object</td></tr>
-<tr><td><code>body.bytes</code></td><td>Required when <code>body.type</code> is <code>raw</code>. This must be a string. You may be required to convert the object to a string</td></tr>
+<tr><td><code>body.data</code></td><td>Is a string that will be used as the response</td></tr>
 <tr><td><code>status</code></td><td>The HTTP status response code</td></tr>
 <tr><td><code>weight</code></td><td>Defaults to 1. Used to provide a response ratio compared to other requests. Useful when returning an error with 1% of requests</td></tr>
 </tbody></table>
