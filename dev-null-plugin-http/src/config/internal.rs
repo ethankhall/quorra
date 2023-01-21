@@ -1,6 +1,4 @@
 use crate::HttpPluginError;
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
 use http::{
     header::CONTENT_TYPE,
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -9,7 +7,6 @@ use http::{
 use rand::{seq::SliceRandom, thread_rng};
 use regex::Regex;
 use std::collections::BTreeMap;
-use std::io::Write;
 use std::str::FromStr;
 use std::sync::{atomic::AtomicUsize, Arc};
 
@@ -180,7 +177,7 @@ impl StaticResponseContainer {
 pub struct StaticResponse {
     pub status: StatusCode,
     pub headers: HeaderMap,
-    pub body: Bytes,
+    pub handlebar_template_id: String,
 }
 
 impl StaticResponse {
@@ -193,21 +190,17 @@ impl StaticResponse {
 
         let mut headers = HeaderMap::new();
 
-        let response_body = {
-            let mut writer = BytesMut::new().writer();
-            match &value.body {
-                None => {}
-                Some(StaticResponseBodyConfig::Json { json }) => {
-                    headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
-                    let body = serde_json::to_vec(&json)?;
-                    writer.write_all(&body)?;
-                }
-                Some(StaticResponseBodyConfig::Raw { bytes }) => {
-                    writer.write_all(bytes.as_bytes())?;
-                }
+        let body_text = match &value.body {
+            None => "".to_string(),
+            Some(StaticResponseBodyConfig::Json { data }) => {
+                headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
+                data.to_string()
             }
-            writer.into_inner().freeze()
+            Some(StaticResponseBodyConfig::Raw { data }) => data.to_string(),
         };
+
+        let mut handlebars = crate::HANDLEBARS.write().unwrap();
+        handlebars.register_template_string(&value.id, body_text)?;
 
         {
             for (name, value) in &value.headers {
@@ -225,7 +218,7 @@ impl StaticResponse {
         Ok(StaticResponse {
             status: status_code,
             headers,
-            body: response_body,
+            handlebar_template_id: value.id.clone(),
         })
     }
 }
