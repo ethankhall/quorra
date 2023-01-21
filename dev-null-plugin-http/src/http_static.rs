@@ -1,36 +1,61 @@
-use std::sync::atomic::Ordering;
+use std::{
+    collections::BTreeMap,
+    sync::atomic::{AtomicU64, Ordering},
+};
 use tracing::{debug, instrument};
 
 use crate::config::internal::*;
 use async_trait::async_trait;
 use bytes::Bytes;
+use lazy_static::lazy_static;
+use serde_json::Value;
 
 use http::{HeaderMap, Method, Response};
 
+lazy_static! {
+    static ref ID_COUNTER: AtomicU64 = AtomicU64::from(0);
+}
+
 impl StaticResponse {
     #[instrument(skip_all, fields(plugin.id = plugin_id, payload.id = payload_id))]
-    fn make_response(&self, plugin_id: &str, payload_id: &str) -> Response<Bytes> {
-        use http::header::{HeaderName, HeaderValue};
-        let mut builder = Response::builder().status(self.status);
+    fn make_response(
+        &self,
+        plugin_id: &str,
+        payload_id: &str,
+        request_body: &Option<&Bytes>,
+    ) -> Response<Bytes> {
+        let body_string = match request_body {
+            None => Value::Null,
+            Some(body) => Value::from(String::from_utf8(body.to_vec()).unwrap_or_default()),
+        };
+
+        let values = BTreeMap::from([
+            ("uuid", Value::from(uuid::Uuid::new_v4().to_string())),
+            ("id", Value::from(ID_COUNTER.fetch_add(1, Ordering::SeqCst))),
+            ("dev_null_plugin_id", Value::from(plugin_id)),
+            ("dev_null_payload_id", Value::from(payload_id)),
+            ("request_body", body_string),
+        ]);
+
+        let handlebars = crate::HANDLEBARS.read().unwrap();
+        let body = match handlebars.render(&self.handlebar_template_id, &values) {
+            Ok(body) => body,
+            Err(e) => format!(
+                "DevNull encoundered an error rendering the response. Error {}",
+                e
+            ),
+        };
+        let body = Bytes::from(body);
+
+        let mut response = Response::builder().status(self.status);
 
         {
-            if let Some(headers) = builder.headers_mut() {
+            if let Some(headers) = response.headers_mut() {
                 headers.clone_from(&self.headers);
-                let plugin_id = match HeaderValue::from_bytes(plugin_id.as_bytes()) {
-                    Ok(value) => value,
-                    Err(_) => HeaderValue::from_static("plugin id invalid header"),
-                };
-                headers.insert(HeaderName::from_static("x-dev-null-plugin-id"), plugin_id);
-
-                let payload_id = match HeaderValue::from_bytes(payload_id.as_bytes()) {
-                    Ok(value) => value,
-                    Err(_) => HeaderValue::from_static("payload id invalid header"),
-                };
-                headers.insert(HeaderName::from_static("x-dev-null-payload-id"), payload_id);
             }
         }
 
-        builder.body(self.body.clone()).unwrap()
+        response.body(body).unwrap()
     }
 }
 
@@ -208,12 +233,11 @@ impl dev_null_plugin::HttpPlugin for HttpStaticPlugin {
     ) -> Option<Response<Bytes>> {
         for payload in &self.config.payloads {
             if payload.matches(method, uri, headers, body) {
-                return Some(
-                    payload
-                        .responses
-                        .get_response()
-                        .make_response(&self.config.id, &payload.id),
-                );
+                return Some(payload.responses.get_response().make_response(
+                    &self.config.id,
+                    &payload.id,
+                    body,
+                ));
             }
         }
 

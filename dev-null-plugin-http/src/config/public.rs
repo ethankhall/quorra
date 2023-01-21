@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::value::Value as JsonValue;
 use std::{collections::BTreeMap, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -86,9 +85,9 @@ pub struct StaticResponseConfig {
 #[serde(tag = "type")]
 pub enum StaticResponseBodyConfig {
     #[serde(rename = "raw")]
-    Raw { bytes: String },
+    Raw { data: String },
     #[serde(rename = "json")]
-    Json { json: JsonValue },
+    Json { data: String },
 }
 
 fn default_weight() -> u16 {

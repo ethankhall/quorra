@@ -6,6 +6,17 @@ mod config;
 mod http_static;
 
 pub use crate::config::StaticPluginDef;
+use handlebars::Handlebars;
+use lazy_static::lazy_static;
+use std::sync::RwLock;
+
+lazy_static! {
+    pub(crate) static ref HANDLEBARS: RwLock<Box<Handlebars<'static>>> = {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_escape_fn(handlebars::no_escape);
+        RwLock::new(Box::new(handlebars))
+    };
+}
 
 #[derive(Error, Debug)]
 pub enum HttpPluginError {
@@ -31,6 +42,8 @@ pub enum HttpPluginError {
     NoResponsesProvided,
     #[error(transparent)]
     FigmentError(#[from] figment::Error),
+    #[error(transparent)]
+    TemplateError(#[from] handlebars::TemplateError),
 }
 
 pub(crate) fn unique_id() -> String {

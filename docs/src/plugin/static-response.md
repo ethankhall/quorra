@@ -26,21 +26,17 @@ Next create `./static-rest.yaml` with the contents
 ```yaml
 http:
   - matches:
-    - path: /api/v1/foo
-      headers:
-        host: localhost
-      methods:
-       - GET
+    - path: /echo
     responses:
       - headers: {}
         body:
-          type: json
-          json: {}
+          type: raw
+          data: '{{ request_body }}'
         status: 200
         weight: 5
       - body:
           type: raw
-          bytes: '{}'
+          data: '{}'
         status: 500
   - matches:
     - path: /graphql
@@ -52,13 +48,34 @@ http:
       - headers: {}
         body:
           type: json
-          json: {}
+          data: |
+            {
+              "uuid": "{{ uuid }}",
+              "id": {{ id }}
+            }
         status: 200
 ```
+
+In this example two endpoints will be registered.
+
+The first `/echo`, which will respond with the request body 5-1 times, the 1 time will be a 500.
+The second is `/graphql`, which matches the the operationName is `coolQuery`, and will respond with a JSON object containing `uuid` and `id`.
 
 ### Pro Tip
 
 In production we recommend setting ID's to something useful. That way when you are unsure about where a response came from you can trace it by the response headers.
+
+## Magic Values
+
+We use Handlebars to add dynamic values to the response. This is most often used with ID responses.
+
+| Key                   | Description                                                                    |
+|-----------------------|--------------------------------------------------------------------------------|
+| `uuid`                | A random UUID Version 4                                                        |
+| `id`                  | A sequential unsigned number. This value will reset when `/dev/null` restarts. |
+| `dev_null_plugin_id`  | The Plugin Id that matched                                                     |
+| `dev_null_payload_id` | The Payload Id that matched                                                    |
+| `request_body`        | The entire request body                                                        |
 
 ## File structure
 
@@ -99,8 +116,7 @@ A list of possible responses. At least one with a weight of > 0 required.
 | `id`         | When not present, will be genreated. The `id` is included as `x-dev-null-payload-id` header                                    |
 | `headers`    | Optional, when set a key-value list of headers that will be included in the response                                           |
 | `body.type`  | Either `json` or `raw` depending on the data being responded with                                                              |
-| `body.json`  | Required when `body.type` is `json`. This must be a valid JSON object                                                          |
-| `body.bytes` | Required when `body.type` is `raw`. This must be a string. You may be required to convert the object to a string               |
+| `body.data`  | Is a string that will be used as the response                                                                                  |
 | `status`     | The HTTP status response code                                                                                                  |
 | `weight`     | Defaults to 1. Used to provide a response ratio compared to other requests. Useful when returning an error with 1% of requests |
 
