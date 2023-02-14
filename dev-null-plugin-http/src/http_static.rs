@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use lazy_static::lazy_static;
 use serde_json::Value;
+use tokio::time::sleep;
 
 use http::{HeaderMap, Method, Response};
 
@@ -18,7 +19,7 @@ lazy_static! {
 
 impl StaticResponse {
     #[instrument(skip_all, fields(plugin.id = plugin_id, payload.id = payload_id))]
-    fn make_response(
+    async fn make_response(
         &self,
         plugin_id: &str,
         payload_id: &str,
@@ -28,6 +29,9 @@ impl StaticResponse {
             None => Value::Null,
             Some(body) => Value::from(String::from_utf8(body.to_vec()).unwrap_or_default()),
         };
+
+        debug!("Starting a wait of {:?}", self.delay);
+        sleep(self.delay).await;
 
         let values = BTreeMap::from([
             ("uuid", Value::from(uuid::Uuid::new_v4().to_string())),
@@ -233,11 +237,13 @@ impl dev_null_plugin::HttpPlugin for HttpStaticPlugin {
     ) -> Option<Response<Bytes>> {
         for payload in &self.config.payloads {
             if payload.matches(method, uri, headers, body) {
-                return Some(payload.responses.get_response().make_response(
-                    &self.config.id,
-                    &payload.id,
-                    body,
-                ));
+                return Some(
+                    payload
+                        .responses
+                        .get_response()
+                        .make_response(&self.config.id, &payload.id, body)
+                        .await,
+                );
             }
         }
 
