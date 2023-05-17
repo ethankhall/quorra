@@ -11,17 +11,17 @@ use lazy_static::lazy_static;
 use serde_json::Value;
 use tokio::time::sleep;
 
-use http::{HeaderMap, Method, Response};
+use http::{HeaderMap, Method, Response, Uri};
+use form_urlencoded;
 
 lazy_static! {
     static ref ID_COUNTER: AtomicU64 = AtomicU64::from(0);
 }
 
 impl StaticResponse {
-    #[instrument(skip_all, fields(plugin.id = plugin_id, payload.id = payload_id))]
+    #[instrument(skip_all, fields(payload.id = payload_id))]
     async fn make_response(
         &self,
-        plugin_id: &str,
         payload_id: &str,
         request_body: &Option<&Bytes>,
     ) -> Response<Bytes> {
@@ -36,7 +36,6 @@ impl StaticResponse {
         let values = BTreeMap::from([
             ("uuid", Value::from(uuid::Uuid::new_v4().to_string())),
             ("id", Value::from(ID_COUNTER.fetch_add(1, Ordering::SeqCst))),
-            ("dev_null_plugin_id", Value::from(plugin_id)),
             ("dev_null_payload_id", Value::from(payload_id)),
             ("request_body", body_string),
         ]);
@@ -84,7 +83,7 @@ impl PayloadBackendConfig {
     fn matches(
         &self,
         method: &Method,
-        uri: &str,
+        uri: &Uri,
         headers: &HeaderMap,
         body: &Option<&Bytes>,
     ) -> bool {
@@ -98,7 +97,7 @@ impl RequestMatcher {
     fn request_matches(
         &self,
         method: &Method,
-        uri: &str,
+        uri: &Uri,
         headers: &HeaderMap,
         body: &Option<&Bytes>,
     ) -> bool {
@@ -107,12 +106,15 @@ impl RequestMatcher {
         }
         debug!("Matched method");
 
-        if let Some(path) = &self.path {
-            if !path.is_match(uri) {
-                return false;
-            }
+        if !self.path.is_match(uri.path()) {
+            return false;
         }
         debug!("Matched uri");
+
+        if !self.matches_query(uri) {
+            return false;
+        }
+        debug!("Matched query");
 
         if !self.matches_headers(headers) {
             return false;
@@ -168,56 +170,105 @@ impl RequestMatcher {
             })
         })
     }
+
+    fn matches_query(&self, uri: &Uri) -> bool {
+        if self.query_params.is_empty() {
+            return true;
+        }
+
+        let query = match uri.query() {
+            Some(q) => q,
+            None => return false
+        };
+
+        let mut query_param_map: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        let query_params = form_urlencoded::parse(query.as_bytes()).into_owned();
+        for pair in query_params {
+            query_param_map.entry(pair.0).and_modify(|list| list.push(pair.1.clone())).or_insert(vec![pair.1]);
+        }
+
+        self.query_params.iter().all(|query_matcher| {
+            if let Some(values) = query_param_map.get(&query_matcher.name) {
+                values.iter().all(|value| {
+                    query_matcher
+                        .value
+                        .is_match(value)
+                })
+            } else {
+                false
+            }
+        })
+    }
 }
 
 #[test]
 fn test_request_matcher_empty() {
     let matcher = RequestMatcher::new(
         &Default::default(),
+        &".*".to_string(),
         &Default::default(),
         &Default::default(),
         &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::OPTIONS, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::GET, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::PUT, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::DELETE, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::HEAD, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::TRACE, "", &Default::default(), &None));
+    let empty_uri = "/".parse::<Uri>().unwrap();
+    assert!(matcher.request_matches(&Method::OPTIONS, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::GET, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::PUT, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::DELETE, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::HEAD, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::TRACE, &empty_uri, &Default::default(), &None));
 
-    assert!(matcher.request_matches(&Method::POST, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::CONNECT, "", &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::PATCH, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::POST, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::CONNECT, &empty_uri, &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::PATCH, &empty_uri, &Default::default(), &None));
 
-    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::GET, &"/foo/bar".parse::<Uri>().unwrap(), &Default::default(), &None));
 }
 
 #[test]
 fn test_request_matcher_method() {
     let matcher = RequestMatcher::new(
         &vec!["GET".to_owned()],
+        &".*".to_string(),
         &Default::default(),
         &Default::default(),
         &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::GET, "", &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::PUT, "", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::GET, &"/".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::PUT, &"/".parse::<Uri>().unwrap(), &Default::default(), &None));
 }
 
 #[test]
 fn test_request_matcher_path() {
     let matcher = RequestMatcher::new(
         &Default::default(),
-        &Some("/foo/bar".to_owned()),
+        &"/foo/bar".to_owned(),
+        &Default::default(),
         &Default::default(),
         &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::GET, "/foo/bar", &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::GET, "/foo/barasdfa", &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::GET, "/foo/bar/", &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::GET,&"/foo/bar".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::GET, &"/foo/barasdfa".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::GET, &"/foo/bar/".parse::<Uri>().unwrap(), &Default::default(), &None));
+}
+
+#[test]
+fn test_request_matcher_query() {
+    let matcher = RequestMatcher::new(
+        &Default::default(),
+        &".*".to_string(),
+        &vec![("foo".to_string(), "bar".to_string())],
+        &Default::default(),
+        &Default::default(),
+    )
+    .unwrap();
+    assert!(!matcher.request_matches(&Method::GET, &"/foo/bar".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(matcher.request_matches(&Method::GET, &"/test?foo=bar".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::GET, &"/test?foo=bar&foo=baz".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(!matcher.request_matches(&Method::GET, &"/test?foo=baz".parse::<Uri>().unwrap(), &Default::default(), &None));
 }
 
 #[derive(Debug, Clone)]
@@ -227,11 +278,11 @@ pub struct HttpStaticPlugin {
 
 #[async_trait]
 impl dev_null_plugin::HttpPlugin for HttpStaticPlugin {
-    #[instrument(skip_all, fields(plugin.id = self.config.id))]
+    #[instrument(skip_all)]
     async fn respond_to_request(
         &self,
         method: &Method,
-        uri: &str,
+        uri: &Uri,
         headers: &HeaderMap,
         body: &Option<&Bytes>,
     ) -> Option<Response<Bytes>> {
@@ -241,7 +292,7 @@ impl dev_null_plugin::HttpPlugin for HttpStaticPlugin {
                     payload
                         .responses
                         .get_response()
-                        .make_response(&self.config.id, &payload.id, body)
+                        .make_response(&payload.id, body)
                         .await,
                 );
             }

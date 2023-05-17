@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use http::{header::HeaderMap, Method, Response, StatusCode};
+use http::{header::HeaderMap, Method, Response, StatusCode, Uri};
 
 #[derive(Debug, Default)]
 pub struct EmptyReponse {}
@@ -9,7 +9,7 @@ impl crate::HttpPlugin for EmptyReponse {
     async fn respond_to_request(
         &self,
         _method: &Method,
-        _uri: &str,
+        _uri: &Uri,
         _headers: &HeaderMap,
         _body: &Option<&Bytes>,
     ) -> Option<Response<Bytes>> {
@@ -27,7 +27,7 @@ impl crate::HttpPlugin for ConstantResponse {
     async fn respond_to_request(
         &self,
         _method: &Method,
-        _uri: &str,
+        _uri: &Uri,
         _headers: &HeaderMap,
         _body: &Option<&Bytes>,
     ) -> Option<Response<Bytes>> {

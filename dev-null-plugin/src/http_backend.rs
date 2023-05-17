@@ -1,6 +1,6 @@
 use crate::HttpPlugin;
 use bytes::Bytes;
-use http::{HeaderMap, Method, Response};
+use http::{HeaderMap, Method, Response, Uri};
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::{error, instrument};
@@ -27,7 +27,7 @@ impl HttpBackend {
     pub async fn handle_request(
         &self,
         method: &Method,
-        uri: &str,
+        uri: &Uri,
         headers: &HeaderMap,
         body: &Bytes,
     ) -> Result<Option<Response<Bytes>>, HttpBackend> {
@@ -52,7 +52,7 @@ async fn test_no_match_found() {
     };
 
     let response = backend
-        .handle_request(&Method::GET, "/", &Default::default(), &Bytes::new())
+        .handle_request(&Method::GET, &"/".parse::<Uri>().unwrap(), &Default::default(), &Bytes::new())
         .await;
     assert!(response.is_ok());
     assert!(response.unwrap().is_none());
@@ -66,7 +66,7 @@ async fn test_match_found() {
     };
 
     let response = backend
-        .handle_request(&Method::GET, "/", &Default::default(), &Bytes::new())
+        .handle_request(&Method::GET, &"/".parse::<Uri>().unwrap(), &Default::default(), &Bytes::new())
         .await;
     assert!(response.is_ok());
     assert!(response.unwrap().is_some());

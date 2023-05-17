@@ -13,7 +13,7 @@ use opentelemetry::{
 };
 use opentelemetry_otlp::{ExportConfig, Protocol, TonicExporterBuilder, WithExportConfig};
 use std::time::Duration;
-use tracing::{self, level_filters::LevelFilter};
+use tracing::{self, debug, level_filters::LevelFilter};
 use tracing_opentelemetry::MetricsLayer;
 use tracing_subscriber::{
     filter::filter_fn,
@@ -160,6 +160,11 @@ pub fn configure_logging(logging_opts: &LoggingOpts, runtime_args: &RuntimeArgs)
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     tracing_log::LogTracer::init().expect("logging to work correctly");
+
+    opentelemetry::global::set_error_handler(|error| {
+        debug!("Unable to send data to otel: {:?}", error);
+    })
+    .expect("To be able to set otel config");
 }
 
 fn make_exporter(runtime_args: &RuntimeArgs) -> TonicExporterBuilder {

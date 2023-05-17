@@ -1,4 +1,5 @@
 use clap::Parser;
+use dev_null_config::ConfigContainer;
 use std::{path::Path, process::ExitCode, time::Duration};
 use tokio::sync::RwLock;
 use tracing::{debug, error, warn};
@@ -39,20 +40,32 @@ async fn main() -> ExitCode {
 
 fn watch_for_changes(root_config: &Path, shared_config: Arc<RwLock<HyperService>>) {
     let root_config = root_config.to_path_buf();
+    let config_container = ConfigContainer::new(&root_config);
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(5)).await;
 
             debug!("Reloading configuration");
 
-            match config::load_config(&root_config).await {
-                Ok(server_config) => {
-                    let service = HyperService::new(server_config.http_plugins);
-                    *shared_config.write().await = service;
-                }
+            let loaded_config = match config_container.load_config() {
+                Ok(loaded_config) => loaded_config,
                 Err(e) => {
-                    warn!("Unable to reload config because {:?}", e);
+                    warn!("Unable to load config: {:?}", e);
+                    continue;
                 }
+            };
+
+            let http_plugins = match crate::config::build_backends(&loaded_config).await {
+                Ok(loaded_config) => loaded_config,
+                Err(e) => {
+                    warn!("Unable to convert config: {:?}", e);
+                    continue;
+                }
+            };
+            debug!("Found {} http plugins", http_plugins.len());
+            let service = HyperService::new(http_plugins);
+            {
+                *shared_config.write().await = service;
             }
         }
     });

@@ -1,4 +1,5 @@
 use crate::HttpPluginError;
+use dev_null_config::prelude::*;
 use http::{
     header::CONTENT_TYPE,
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -10,31 +11,18 @@ use std::str::FromStr;
 use std::sync::{atomic::AtomicUsize, Arc};
 use std::{collections::BTreeMap, time::Duration};
 
-use super::{
-    StaticHttpConfig, StaticMatchesConfig, StaticPluginConfig, StaticResponseBodyConfig,
-    StaticResponseConfig,
-};
-
 #[derive(Debug, Clone)]
 pub struct PluginBackendConfig {
-    pub id: String,
     pub payloads: Vec<PayloadBackendConfig>,
 }
 
 impl PluginBackendConfig {
-    pub fn try_from(config: StaticPluginConfig) -> Result<Self, HttpPluginError> {
-        let plugin_id = config.id;
+    pub fn try_from(configs: &[StaticHttpConfig<String>]) -> Result<Self, HttpPluginError> {
         let mut payloads = Vec::new();
-        for http_config in config.http {
-            payloads.push(PayloadBackendConfig::from_http_config(
-                &plugin_id,
-                &http_config,
-            )?);
+        for http_config in configs {
+            payloads.push(PayloadBackendConfig::from_http_config(http_config)?);
         }
-        Ok(Self {
-            id: plugin_id,
-            payloads,
-        })
+        Ok(Self { payloads })
     }
 }
 
@@ -46,13 +34,10 @@ pub struct PayloadBackendConfig {
 }
 
 impl PayloadBackendConfig {
-    fn from_http_config(
-        plugin_id: &str,
-        config: &StaticHttpConfig,
-    ) -> Result<Self, HttpPluginError> {
+    fn from_http_config(config: &StaticHttpConfig<String>) -> Result<Self, HttpPluginError> {
         let payload_id = config.id.clone();
         let responses: StaticResponseContainer =
-            StaticResponseContainer::try_from(plugin_id, &payload_id, &config.responses)?;
+            StaticResponseContainer::try_from(&payload_id, &config.responses)?;
         let matchers: Result<Vec<_>, _> = config
             .matches
             .iter()
@@ -67,10 +52,11 @@ impl PayloadBackendConfig {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct RequestMatcher {
     pub methods: Vec<Method>,
-    pub path: Option<Regex>,
+    pub path: Regex,
+    pub query_params: Vec<QueryMatcher>,
     pub headers: Vec<HeaderMatcher>,
     pub graphql_operations: Option<Regex>,
 }
@@ -81,6 +67,7 @@ impl RequestMatcher {
         RequestMatcher::new(
             &config.methods,
             &config.path,
+            &config.query,
             &config.headers,
             &gql_operations,
         )
@@ -88,17 +75,20 @@ impl RequestMatcher {
 
     pub fn new(
         methods: &Vec<String>,
-        path: &Option<String>,
+        path: &String,
+        query_params: &Vec<(String, String)>,
         headers: &BTreeMap<String, String>,
         graphql_operations: &Option<String>,
     ) -> Result<Self, HttpPluginError> {
-        let matched_path = match &path {
-            Some(path) => Some(Regex::new(&format!("^{}$", &path))?),
-            None => None,
-        };
+        let matched_path = Regex::new(&format!("^{}$", &path))?;
         let mut matched_headers = Vec::new();
         for (name, value) in headers {
             matched_headers.push(HeaderMatcher::new(name, value)?);
+        }
+
+        let mut matched_query = Vec::new();
+        for (name, value) in query_params {
+            matched_query.push(QueryMatcher::new(name, value)?);
         }
 
         let mut parsed_methods = Vec::new();
@@ -113,6 +103,7 @@ impl RequestMatcher {
 
         Ok(Self {
             path: matched_path,
+            query_params: matched_query,
             headers: matched_headers,
             methods: parsed_methods,
             graphql_operations: matched_graphql,
@@ -136,6 +127,21 @@ impl HeaderMatcher {
 }
 
 #[derive(Debug, Clone)]
+pub struct QueryMatcher {
+    pub name: String,
+    pub value: Regex,
+}
+
+impl QueryMatcher {
+    fn new(name: &str, value: &str) -> Result<Self, HttpPluginError> {
+        Ok(Self {
+            name: name.to_string(),
+            value: Regex::new(value)?,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct StaticResponseContainer {
     pub pointer: Arc<AtomicUsize>,
     pub responses: Vec<Arc<StaticResponse>>,
@@ -143,9 +149,8 @@ pub struct StaticResponseContainer {
 
 impl StaticResponseContainer {
     fn try_from(
-        plugin_id: &str,
         payload_id: &str,
-        configs: &[StaticResponseConfig],
+        configs: &[StaticResponseConfig<String>],
     ) -> Result<Self, HttpPluginError> {
         let mut configs = configs.to_owned();
         configs.sort_by(|a, b| a.weight.cmp(&b.weight));
@@ -153,7 +158,7 @@ impl StaticResponseContainer {
         let mut responses = Vec::new();
 
         for config in configs {
-            let static_response = StaticResponse::try_from(plugin_id, payload_id, &config)?;
+            let static_response = StaticResponse::try_from(payload_id, &config)?;
             let static_response: Arc<StaticResponse> = Arc::new(static_response);
             for _i in 0..config.weight {
                 responses.push(static_response.clone());
@@ -183,9 +188,8 @@ pub struct StaticResponse {
 
 impl StaticResponse {
     fn try_from(
-        plugin_id: &str,
         payload_id: &str,
-        value: &StaticResponseConfig,
+        value: &StaticResponseConfig<String>,
     ) -> Result<Self, HttpPluginError> {
         let status_code = StatusCode::from_u16(value.status)?;
 
@@ -193,11 +197,11 @@ impl StaticResponse {
 
         let body_text = match &value.body {
             None => "".to_string(),
-            Some(StaticResponseBodyConfig::Json { data }) => {
+            Some(StaticResponseBodyConfig::Json(data)) => {
                 headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
                 data.to_string()
             }
-            Some(StaticResponseBodyConfig::Raw { data }) => data.to_string(),
+            Some(StaticResponseBodyConfig::Raw(data)) => data.to_string(),
         };
 
         let mut handlebars = crate::HANDLEBARS.write().unwrap();
@@ -213,7 +217,6 @@ impl StaticResponse {
 
             add_header(&mut headers, "response-id", &value.id);
             add_header(&mut headers, "payload-id", payload_id);
-            add_header(&mut headers, "plugin-id", plugin_id);
         }
 
         Ok(StaticResponse {

@@ -2,6 +2,7 @@
 
 members = [
     "dev-null",
+    "dev-null-config",
     "dev-null-plugin-http",
     "dev-null-plugin"
 ]
