@@ -11,7 +11,7 @@ mod cli;
 mod logging;
 mod user;
 
-pub use cli::Opts;
+pub use cli::{Opts, SubCommands};
 pub use logging::*;
 pub use user::*;
 
@@ -21,10 +21,12 @@ pub struct ServerConfig {
     pub http_plugins: Vec<Arc<Box<dyn HttpPlugin>>>,
 }
 
-pub async fn load_config(cli: &Opts) -> Result<ServerConfig, anyhow::Error> {
-    let config_path = cli.config_file.as_path();
+pub async fn load_config(config_path: &Path) -> Result<ServerConfig, anyhow::Error> {
     if !config_path.exists() {
-        bail!("Unable to find file {:?}", config_path);
+        bail!(
+            "Unable to find file {:?}",
+            config_path.display().to_string()
+        );
     }
 
     debug!("Loading config file {}", config_path.display());
