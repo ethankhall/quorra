@@ -1,6 +1,4 @@
-use std::path::PathBuf;
-
-use clap::{ColorChoice, Parser};
+use clap::{ColorChoice, Parser, Subcommand};
 
 use crate::config::logging::*;
 
@@ -13,6 +11,12 @@ pub struct Opts {
     #[clap(flatten)]
     pub runtime_metrics: RuntimeArgs,
 
-    #[clap(long, short)]
-    pub config_file: PathBuf,
+    #[clap(subcommand)]
+    pub command: SubCommands,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum SubCommands {
+    /// Run the primary web server mocking responses
+    Server(crate::server::ServerCommandConfig),
 }
