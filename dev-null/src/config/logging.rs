@@ -42,7 +42,8 @@ pub struct RuntimeArgs {
     #[clap(
         long = "otel-collector",
         env = "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-        default_value("http://localhost:4317")
+        default_value("http://localhost:4317"),
+        global(true)
     )]
     otel_collector: String,
 }
