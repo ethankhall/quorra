@@ -44,6 +44,8 @@ pub enum HttpPluginError {
     FigmentError(#[from] figment::Error),
     #[error(transparent)]
     TemplateError(#[from] handlebars::TemplateError),
+    #[error(transparent)]
+    AnyhowError(#[from] anyhow::Error),
 }
 
 pub(crate) fn unique_id() -> String {

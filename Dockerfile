@@ -59,4 +59,4 @@ RUN apt-get update && apt-get install tini -y
 WORKDIR /app
 COPY --from=release /app/target/release/dev-null /usr/local/bin
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/usr/local/bin/dev-null"]
+CMD ["/usr/local/bin/dev-null", "server"]

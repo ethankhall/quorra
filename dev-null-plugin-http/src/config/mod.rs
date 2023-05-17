@@ -19,6 +19,15 @@ pub async fn load_http_plugin_config(
     } else {
         config_dir.join(plugin_def.config_path)
     };
+
+    if !config_path.exists() {
+        return Err(anyhow::anyhow!(
+            "Unable to find file {:?}",
+            config_path.display().to_string()
+        )
+        .into());
+    }
+
     debug!("Loading HTTP plugin config from {}", config_path.display());
     let figment = Figment::new().merge(YamlExtended::file(config_path));
     debug!("Loaded config to be {:?}", figment);
