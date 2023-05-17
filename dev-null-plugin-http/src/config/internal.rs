@@ -6,9 +6,9 @@ use http::{
 };
 use rand::{seq::SliceRandom, thread_rng};
 use regex::Regex;
-use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::sync::{atomic::AtomicUsize, Arc};
+use std::{collections::BTreeMap, time::Duration};
 
 use super::{
     StaticHttpConfig, StaticMatchesConfig, StaticPluginConfig, StaticResponseBodyConfig,
@@ -178,6 +178,7 @@ pub struct StaticResponse {
     pub status: StatusCode,
     pub headers: HeaderMap,
     pub handlebar_template_id: String,
+    pub delay: Duration,
 }
 
 impl StaticResponse {
@@ -219,6 +220,7 @@ impl StaticResponse {
             status: status_code,
             headers,
             handlebar_template_id: value.id.clone(),
+            delay: Duration::from_millis(value.delay),
         })
     }
 }

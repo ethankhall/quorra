@@ -119,6 +119,7 @@ A list of possible responses. At least one with a weight of > 0 required.
 | `body.data`  | Is a string that will be used as the response                                                                                  |
 | `status`     | The HTTP status response code                                                                                                  |
 | `weight`     | Defaults to 1. Used to provide a response ratio compared to other requests. Useful when returning an error with 1% of requests |
+| `delay`      | Default to 0. The number of millisecond to wait before responding to the reqeust.                                              |
 
   [regex]: https://docs.rs/regex/latest/regex/
   [methods]: https://docs.rs/http/latest/http/method/struct.Method.html

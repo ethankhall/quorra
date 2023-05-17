@@ -8,6 +8,7 @@ http:
           data: '{{ request_body }}'
         status: 200
         weight: 5
+        delay: 5000
       - body:
           type: raw
           data: '{}'

@@ -79,6 +79,8 @@ pub struct StaticResponseConfig {
     pub headers: BTreeMap<String, String>,
     #[serde(default)]
     pub body: Option<StaticResponseBodyConfig>,
+    #[serde(default)]
+    pub delay: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
