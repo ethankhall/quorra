@@ -32,6 +32,7 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
             var path_to_root = "../";
@@ -69,10 +70,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -236,6 +239,7 @@ The second is <code>/graphql</code>, which matches the the operationName is <cod
 <tr><td><code>body.data</code></td><td>Is a string that will be used as the response</td></tr>
 <tr><td><code>status</code></td><td>The HTTP status response code</td></tr>
 <tr><td><code>weight</code></td><td>Defaults to 1. Used to provide a response ratio compared to other requests. Useful when returning an error with 1% of requests</td></tr>
+<tr><td><code>delay</code></td><td>Default to 0. The number of millisecond to wait before responding to the reqeust.</td></tr>
 </tbody></table>
 </div>
                     </main>
@@ -286,5 +290,6 @@ The second is <code>/graphql</code>, which matches the the operationName is <cod
         <!-- Custom JS scripts -->
 
 
+    </div>
     </body>
 </html>
