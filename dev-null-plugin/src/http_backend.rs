@@ -52,7 +52,12 @@ async fn test_no_match_found() {
     };
 
     let response = backend
-        .handle_request(&Method::GET, &"/".parse::<Uri>().unwrap(), &Default::default(), &Bytes::new())
+        .handle_request(
+            &Method::GET,
+            &"/".parse::<Uri>().unwrap(),
+            &Default::default(),
+            &Bytes::new(),
+        )
         .await;
     assert!(response.is_ok());
     assert!(response.unwrap().is_none());
@@ -66,7 +71,12 @@ async fn test_match_found() {
     };
 
     let response = backend
-        .handle_request(&Method::GET, &"/".parse::<Uri>().unwrap(), &Default::default(), &Bytes::new())
+        .handle_request(
+            &Method::GET,
+            &"/".parse::<Uri>().unwrap(),
+            &Default::default(),
+            &Bytes::new(),
+        )
         .await;
     assert!(response.is_ok());
     assert!(response.unwrap().is_some());

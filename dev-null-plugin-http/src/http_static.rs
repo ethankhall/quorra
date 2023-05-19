@@ -12,7 +12,6 @@ use serde_json::Value;
 use tokio::time::sleep;
 
 use http::{HeaderMap, Method, Response, Uri};
-use form_urlencoded;
 
 lazy_static! {
     static ref ID_COUNTER: AtomicU64 = AtomicU64::from(0);
@@ -178,22 +177,23 @@ impl RequestMatcher {
 
         let query = match uri.query() {
             Some(q) => q,
-            None => return false
+            None => return false,
         };
 
         let mut query_param_map: BTreeMap<String, Vec<String>> = BTreeMap::new();
         let query_params = form_urlencoded::parse(query.as_bytes()).into_owned();
         for pair in query_params {
-            query_param_map.entry(pair.0).and_modify(|list| list.push(pair.1.clone())).or_insert(vec![pair.1]);
+            query_param_map
+                .entry(pair.0)
+                .and_modify(|list| list.push(pair.1.clone()))
+                .or_insert_with(|| vec![pair.1]);
         }
 
         self.query_params.iter().all(|query_matcher| {
             if let Some(values) = query_param_map.get(&query_matcher.name) {
-                values.iter().all(|value| {
-                    query_matcher
-                        .value
-                        .is_match(value)
-                })
+                values
+                    .iter()
+                    .all(|value| query_matcher.value.is_match(value))
             } else {
                 false
             }
@@ -223,7 +223,12 @@ fn test_request_matcher_empty() {
     assert!(matcher.request_matches(&Method::CONNECT, &empty_uri, &Default::default(), &None));
     assert!(matcher.request_matches(&Method::PATCH, &empty_uri, &Default::default(), &None));
 
-    assert!(matcher.request_matches(&Method::GET, &"/foo/bar".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(matcher.request_matches(
+        &Method::GET,
+        &"/foo/bar".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
 }
 
 #[test]
@@ -236,8 +241,18 @@ fn test_request_matcher_method() {
         &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::GET, &"/".parse::<Uri>().unwrap(), &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::PUT, &"/".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(matcher.request_matches(
+        &Method::GET,
+        &"/".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
+    assert!(!matcher.request_matches(
+        &Method::PUT,
+        &"/".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
 }
 
 #[test]
@@ -250,9 +265,24 @@ fn test_request_matcher_path() {
         &Default::default(),
     )
     .unwrap();
-    assert!(matcher.request_matches(&Method::GET,&"/foo/bar".parse::<Uri>().unwrap(), &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::GET, &"/foo/barasdfa".parse::<Uri>().unwrap(), &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::GET, &"/foo/bar/".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(matcher.request_matches(
+        &Method::GET,
+        &"/foo/bar".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
+    assert!(!matcher.request_matches(
+        &Method::GET,
+        &"/foo/barasdfa".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
+    assert!(!matcher.request_matches(
+        &Method::GET,
+        &"/foo/bar/".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
 }
 
 #[test]
@@ -265,10 +295,30 @@ fn test_request_matcher_query() {
         &Default::default(),
     )
     .unwrap();
-    assert!(!matcher.request_matches(&Method::GET, &"/foo/bar".parse::<Uri>().unwrap(), &Default::default(), &None));
-    assert!(matcher.request_matches(&Method::GET, &"/test?foo=bar".parse::<Uri>().unwrap(), &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::GET, &"/test?foo=bar&foo=baz".parse::<Uri>().unwrap(), &Default::default(), &None));
-    assert!(!matcher.request_matches(&Method::GET, &"/test?foo=baz".parse::<Uri>().unwrap(), &Default::default(), &None));
+    assert!(!matcher.request_matches(
+        &Method::GET,
+        &"/foo/bar".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
+    assert!(matcher.request_matches(
+        &Method::GET,
+        &"/test?foo=bar".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
+    assert!(!matcher.request_matches(
+        &Method::GET,
+        &"/test?foo=bar&foo=baz".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
+    assert!(!matcher.request_matches(
+        &Method::GET,
+        &"/test?foo=baz".parse::<Uri>().unwrap(),
+        &Default::default(),
+        &None
+    ));
 }
 
 #[derive(Debug, Clone)]

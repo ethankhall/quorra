@@ -40,16 +40,10 @@ impl ConfigContainer {
         let mut response_paths = Vec::new();
 
         for config_path in &parsed_root.responses.paths {
-            let glob_path = format!(
-                "{}/{}",
-                self.base_config_dir.display(),
-                config_path
-            );
+            let glob_path = format!("{}/{}", self.base_config_dir.display(), config_path);
 
             debug!("Glob path: {}", glob_path);
-            let mut found_files = glob(&glob_path)?
-            .filter_map(|x| x.ok())
-            .collect();
+            let mut found_files = glob(&glob_path)?.filter_map(|x| x.ok()).collect();
             response_paths.append(&mut found_files);
         }
 
