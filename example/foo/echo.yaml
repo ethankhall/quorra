@@ -1,0 +1,14 @@
+type: static-http
+matches:
+  - path: /echo
+responses:
+  - headers: {}
+    body:
+        type: raw
+        data: '{{ request_body }}'
+    status: 200
+    weight: 5
+  - body:
+      type: raw
+      data: '{}'
+    status: 500

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
+use dev_null_config::ConfigContainer;
 use dev_null_plugin::HyperService;
 use http::{
     header::{HeaderName, AUTHORIZATION},
@@ -22,17 +23,21 @@ pub struct ServerCommandConfig {
     #[clap(long, short, env = "CONFIG_PATH")]
     /// Location of root config file
     pub config_file: PathBuf,
+
+    #[clap(long, short, env = "SERVER_LISTEN", default_value("127.0.0.1:3000"))]
+    pub listen_address: String,
 }
 
 impl ServerCommandConfig {
     pub async fn run_server(&self) -> Result<(), anyhow::Error> {
-        let config_file = self.config_file.as_path();
-        let server_config = crate::config::load_config(config_file).await?;
-        let addr: SocketAddr = server_config.http_address.parse()?;
-
-        let http_plugins = server_config.http_plugins;
+        let config_container = ConfigContainer::new(&self.config_file);
+        let user_config = config_container.load_config()?;
+        let http_plugins = crate::config::build_backends(&user_config).await?;
         debug!("Found {} http plugins", http_plugins.len());
-        let hyper_backend = Arc::new(RwLock::new(HyperService::new(http_plugins)));
+
+        let addr: SocketAddr = self.listen_address.parse()?;
+        let service = HyperService::new(http_plugins);
+        let hyper_backend = Arc::new(RwLock::new(service));
 
         crate::watch_for_changes(&self.config_file, hyper_backend.clone());
 

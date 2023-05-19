@@ -1,0 +1,13 @@
+type: static-http
+matches:
+  - path: /graphql
+    methods:
+      - POST
+    graphql:  
+      operation-name: coolQuery
+responses:
+  - headers: {}
+    body:
+      type: json
+      file: graphql-response.json
+    status: 200

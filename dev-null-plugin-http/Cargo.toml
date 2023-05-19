@@ -7,6 +7,7 @@ categories = ["development-tools::testing"]
 
 [dependencies]
 dev-null-plugin = { path = "../dev-null-plugin" }
+dev-null-config = { path = "../dev-null-config" }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5.10"
 tokio = { version = "1", features = ["full"] }
@@ -28,6 +29,6 @@ uuid = { version = "1.2.2", features = [
 ]}
 rand = {version = "0.8.5" }
 json = "0.12.4"
-figment = { version = "0.10.8", features = ["toml", "yaml", "serde_json", "serde_yaml"] }
 lazy_static = "1"
 handlebars = "4.3.6"
+form_urlencoded = "1"

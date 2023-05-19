@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use bytes::Bytes;
-use http::{HeaderMap, Method, Response};
+use http::{HeaderMap, Method, Response, Uri};
 pub use hyper_backend::HyperService;
 use std::{fmt::Debug, sync::Arc};
 
@@ -14,7 +14,7 @@ pub trait HttpPlugin: Debug + Sync + Send {
     async fn respond_to_request(
         &self,
         method: &Method,
-        uri: &str,
+        uri: &Uri,
         headers: &HeaderMap,
         body: &Option<&Bytes>,
     ) -> Option<Response<Bytes>>;
