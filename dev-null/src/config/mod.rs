@@ -1,68 +1,26 @@
-use anyhow::bail;
+use dev_null_config::prelude::{ParsedUserConfig, ResponseConfig};
 use dev_null_plugin::HttpPlugin;
-use figment::{
-    providers::{Format, Toml},
-    Figment,
-};
-use std::{path::Path, sync::Arc};
-use tracing::debug;
+use dev_null_plugin_http::HttpStaticPluginBuilder;
+
+use std::sync::Arc;
 
 mod cli;
 mod logging;
-mod user;
 
 pub use cli::{Opts, SubCommands};
 pub use logging::*;
-pub use user::*;
 
-#[derive(Debug, Clone)]
-pub struct ServerConfig {
-    pub http_address: String,
-    pub http_plugins: Vec<Arc<Box<dyn HttpPlugin>>>,
-}
-
-pub async fn load_config(config_path: &Path) -> Result<ServerConfig, anyhow::Error> {
-    if !config_path.exists() {
-        bail!(
-            "Unable to find file {:?}",
-            config_path.display().to_string()
-        );
-    }
-
-    debug!("Loading config file {}", config_path.display());
-
-    let figment = Figment::new().merge(Toml::file(config_path));
-    let user_config: user::UserConfig = figment.extract()?;
-
-    debug!("Loaded config {:?}", user_config);
-
-    let mut http_plugins: Vec<_> = Vec::new();
-    for plugin_config in user_config.http.plugin {
-        let plugin = create_http_backend(
-            config_path.parent().expect("to have a parent"),
-            plugin_config,
-        )
-        .await?;
-        http_plugins.push(Arc::new(plugin));
-    }
-
-    Ok(ServerConfig {
-        http_address: user_config.http.address,
-        http_plugins,
-    })
-}
-
-pub async fn create_http_backend(
-    config_dir: &Path,
-    value: crate::config::PluginConfig,
-) -> Result<Box<dyn HttpPlugin>, anyhow::Error> {
-    let backend = match value.source {
-        PluginSource::LuaPlugin(_lua) => todo!(),
-        PluginSource::WasmPlugin(_wasm) => todo!(),
-        PluginSource::Static(config) => {
-            Box::new(dev_null_plugin_http::build_plugin(config, config_dir).await?)
+pub async fn build_backends(
+    container: &ParsedUserConfig,
+) -> Result<Vec<Arc<Box<dyn HttpPlugin>>>, anyhow::Error> {
+    let mut http_static_builder = HttpStaticPluginBuilder::new();
+    for response_config in &container.responses {
+        match response_config {
+            ResponseConfig::StaticHttp(http) => http_static_builder.load_config(http),
         }
-    };
+    }
 
-    Ok(backend)
+    let boxed = Box::new(http_static_builder.build()?);
+
+    Ok(vec![Arc::new(boxed)])
 }

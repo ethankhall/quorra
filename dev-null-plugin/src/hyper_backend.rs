@@ -29,7 +29,7 @@ impl HyperService {
         req: Request<Body>,
     ) -> Result<Response<Body>, anyhow::Error> {
         let headers = req.headers().clone();
-        let uri = req.uri().to_string();
+        let uri = req.uri().clone();
         let method = req.method().clone();
         let body = match hyper::body::to_bytes(req.into_body()).await {
             Ok(body) => body,

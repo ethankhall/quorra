@@ -1,14 +1,13 @@
-use std::path::Path;
-
 use thiserror::Error;
 
 mod config;
 mod http_static;
 
-pub use crate::config::StaticPluginDef;
+use dev_null_config::prelude::StaticHttpConfig;
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
 use std::sync::RwLock;
+use tracing::debug;
 
 lazy_static! {
     pub(crate) static ref HANDLEBARS: RwLock<Box<Handlebars<'static>>> = {
@@ -41,24 +40,31 @@ pub enum HttpPluginError {
     #[error("No respone configured for match")]
     NoResponsesProvided,
     #[error(transparent)]
-    FigmentError(#[from] figment::Error),
-    #[error(transparent)]
     TemplateError(#[from] handlebars::TemplateError),
     #[error(transparent)]
     AnyhowError(#[from] anyhow::Error),
 }
 
-pub(crate) fn unique_id() -> String {
-    uuid::Uuid::new_v4().to_string()
+#[derive(Debug, Default)]
+pub struct HttpStaticPluginBuilder {
+    configs: Vec<StaticHttpConfig<String>>,
 }
 
-pub async fn build_plugin(
-    def: crate::config::StaticPluginDef,
-    config_dir: &Path,
-) -> Result<http_static::HttpStaticPlugin, HttpPluginError> {
-    let plugin_config = config::load_http_plugin_config(def, config_dir).await?;
+impl HttpStaticPluginBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-    Ok(http_static::HttpStaticPlugin {
-        config: plugin_config,
-    })
+    pub fn load_config(&mut self, config: &StaticHttpConfig<String>) {
+        self.configs.push(config.clone());
+    }
+
+    pub fn build(self) -> Result<http_static::HttpStaticPlugin, HttpPluginError> {
+        debug!("{} responses loaded", self.configs.len());
+        let plugin_config = crate::config::internal::PluginBackendConfig::try_from(&self.configs)?;
+
+        Ok(http_static::HttpStaticPlugin {
+            config: plugin_config,
+        })
+    }
 }
