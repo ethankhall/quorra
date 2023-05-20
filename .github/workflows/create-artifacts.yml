@@ -45,7 +45,10 @@ jobs:
         if: ${{ github.ref != 'refs/heads/main' }}
         run: |
           docker buildx build \
+            --output=type=registry \
             --file Dockerfile \
+            --platform platforms linux/amd64,linux/arm64 \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
+            --tag ghcr.io/ethankhall/dev-null-snapshot:$(git rev-parse --short HEAD) \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
