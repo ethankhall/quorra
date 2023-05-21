@@ -34,7 +34,7 @@ jobs:
           docker buildx build \
             --output=type=registry \
             --file Dockerfile \
-            --platform platforms linux/amd64,linux/arm64 \
+            --platform linux/amd64,linux/arm64 \
             --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache,mode=max \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --tag ghcr.io/ethankhall/dev-null:$(git rev-parse --short HEAD) \
@@ -47,7 +47,7 @@ jobs:
           docker buildx build \
             --output=type=registry \
             --file Dockerfile \
-            --platform platforms linux/amd64,linux/arm64 \
+            --platform linux/amd64,linux/arm64 \
             --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
             --tag ghcr.io/ethankhall/dev-null-snapshot:$(git rev-parse --short HEAD) \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
