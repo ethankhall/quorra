@@ -29,7 +29,7 @@ jobs:
         with:
           images: ${{ inputs.registry }}
           tags: |
-            type=raw,pattern=${{ inputs.version }}
+            type=raw,value=${{ inputs.version }}
             type=ref,event=branch
             type=ref,event=pr
             type=sha
@@ -84,7 +84,7 @@ jobs:
         with:
           images: ${{ inputs.registry }}
           tags: |
-            type=raw,pattern=${{ inputs.version }}
+            type=raw,value=${{ inputs.version }}
             type=ref,event=branch
             type=ref,event=pr
             type=sha
