@@ -19,4 +19,6 @@ pub struct Opts {
 pub enum SubCommands {
     /// Run the primary web server mocking responses
     Server(crate::server::ServerCommandConfig),
+    /// Convert a har file into usable config
+    ConvertHar(crate::convert_har::ConvertHarCommandConfig),
 }

@@ -38,7 +38,7 @@ impl MakeStatic<StaticHttpConfig<String>> for StaticHttpConfig<ResponseData> {
 /// The possible options to match against. All fields are optional. When all
 /// fields are missing, the request will match.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 #[serde(rename_all = "kebab-case")]
 pub struct StaticMatchesConfig {
     /// A regex to be used to match against the request path.
@@ -65,7 +65,7 @@ pub struct StaticMatchesConfig {
 }
 
 /// GraphQL body matcher
-#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 #[serde(rename_all = "kebab-case")]
 pub struct GraphqlStaticMatchConfig {
     /// The name of the GraphQL operation to respond to
@@ -113,6 +113,7 @@ pub enum StaticResponseBodyConfig<T> {
     Raw(T),
     #[serde(rename = "json")]
     Json(T),
+    Empty,
 }
 
 impl MakeStatic<StaticResponseBodyConfig<String>> for StaticResponseBodyConfig<ResponseData> {
@@ -124,6 +125,7 @@ impl MakeStatic<StaticResponseBodyConfig<String>> for StaticResponseBodyConfig<R
             StaticResponseBodyConfig::Raw(raw) => {
                 Ok(StaticResponseBodyConfig::Raw(raw.make_static(file_path)?))
             }
+            StaticResponseBodyConfig::Empty => Ok(StaticResponseBodyConfig::Empty),
         }
     }
 }

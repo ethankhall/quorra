@@ -196,7 +196,7 @@ impl StaticResponse {
         let mut headers = HeaderMap::new();
 
         let body_text = match &value.body {
-            None => "".to_string(),
+            None | Some(StaticResponseBodyConfig::Empty) => "".to_string(),
             Some(StaticResponseBodyConfig::Json(data)) => {
                 headers.insert(&CONTENT_TYPE, HeaderValue::from_static("application/json"));
                 data.to_string()

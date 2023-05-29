@@ -70,6 +70,6 @@ impl ConfigContainer {
 
 pub mod prelude {
     pub use crate::plugins::static_http::*;
-    pub use crate::plugins::ResponseConfig;
+    pub use crate::plugins::{ResponseConfig, ResponseData};
     pub use crate::{ConfigContainer, ParsedUserConfig};
 }
