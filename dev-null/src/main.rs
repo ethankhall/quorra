@@ -5,6 +5,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, error, warn};
 
 mod config;
+mod convert_har;
 mod server;
 
 use config::Opts;
@@ -25,6 +26,7 @@ async fn main() -> ExitCode {
 
     let result = match opt.command {
         config::SubCommands::Server(server_opts) => server_opts.run_server().await,
+        config::SubCommands::ConvertHar(options) => options.run_convert().await,
     };
 
     let exit_code = match result {

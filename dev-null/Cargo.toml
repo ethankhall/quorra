@@ -6,6 +6,7 @@ license = "MIT"
 categories = ["development-tools::testing"]
 
 [dependencies]
+dev-null-har = { path = "../dev-null-har" }
 dev-null-plugin = { path = "../dev-null-plugin" }
 dev-null-plugin-http = { path = "../dev-null-plugin-http" }
 dev-null-config = { path = "../dev-null-config" }
