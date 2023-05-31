@@ -1,21 +1,13 @@
-use std::{
-    collections::BTreeMap,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::{collections::BTreeMap, sync::atomic::Ordering};
 use tracing::{debug, instrument};
 
 use crate::config::internal::*;
 use async_trait::async_trait;
 use bytes::Bytes;
-use lazy_static::lazy_static;
 use serde_json::Value;
 use tokio::time::sleep;
 
 use http::{HeaderMap, Method, Response, Uri};
-
-lazy_static! {
-    static ref ID_COUNTER: AtomicU64 = AtomicU64::from(0);
-}
 
 impl StaticResponse {
     #[instrument(skip_all, fields(payload.id = payload_id))]
@@ -33,8 +25,6 @@ impl StaticResponse {
         sleep(self.delay).await;
 
         let values = BTreeMap::from([
-            ("uuid", Value::from(uuid::Uuid::new_v4().to_string())),
-            ("id", Value::from(ID_COUNTER.fetch_add(1, Ordering::SeqCst))),
             ("dev_null_payload_id", Value::from(payload_id)),
             ("request_body", body_string),
         ]);
