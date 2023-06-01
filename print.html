@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>/dev/null Service</title>
+        <title>Quorra Service</title>
         <meta name="robots" content="noindex" />
 
 
@@ -84,7 +84,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="why_do_i_exist.html"><strong aria-hidden="true">1.</strong> Why does /dev/null exist?</a></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="plugins.html"><strong aria-hidden="true">3.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/static-response.html"><strong aria-hidden="true">3.1.</strong> Static Response</a></li><li class="chapter-item expanded "><a href="plugin/lua.html"><strong aria-hidden="true">3.2.</strong> Lua</a></li><li class="chapter-item expanded "><a href="plugin/wasm.html"><strong aria-hidden="true">3.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="developer/index.html"><strong aria-hidden="true">4.</strong> Developer</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="why_do_i_exist.html"><strong aria-hidden="true">1.</strong> Why does Quorra exist?</a></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="plugins.html"><strong aria-hidden="true">3.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/static-response.html"><strong aria-hidden="true">3.1.</strong> Static Response</a></li><li class="chapter-item expanded "><a href="plugin/lua.html"><strong aria-hidden="true">3.2.</strong> Lua</a></li><li class="chapter-item expanded "><a href="plugin/wasm.html"><strong aria-hidden="true">3.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="developer/index.html"><strong aria-hidden="true">4.</strong> Developer</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -113,7 +113,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">/dev/null Service</h1>
+                    <h1 class="menu-title">Quorra Service</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -145,30 +145,33 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="why-does-devnull-exist"><a class="header" href="#why-does-devnull-exist">Why does <code>/dev/null</code> exist?</a></h1>
-<p>The <code>/dev/null</code> service exists to allow engineers to <a href="https://en.wikipedia.org/wiki/Black-box_testing">blackbox</a> test their service dependencies.</p>
-<p>As services mature and grow, they end up taking on many dependencies. Often those dependencies don't have a &quot;sandbox&quot; account that acts correctly. That's where the <code>/dev/null</code> service comes in. It pretends to be that service, and will respond with whatever text/json you want.</p>
-<p>This means you can record some normal API interactions, then <em>save</em> those into a config file, and <code>/dev/null</code> will respond with that data.</p>
+                        <h1 id="why-does-quorra-exist"><a class="header" href="#why-does-quorra-exist">Why does Quorra exist?</a></h1>
+<p>The Quorra service exists to allow engineers to <a href="https://en.wikipedia.org/wiki/Black-box_testing">blackbox</a> test their service dependencies.</p>
+<p>As services mature and grow, they end up taking on many dependencies. Often those dependencies don't have a &quot;sandbox&quot; account that acts correctly. That's where the Quorra service comes in. It pretends to be that service, and will respond with whatever text/json you want.</p>
+<p>This means you can record some normal API interactions, then <em>save</em> those into a config file, and Quorra will respond with that data.</p>
 <h2 id="whats-the-catch"><a class="header" href="#whats-the-catch">What's the catch?</a></h2>
 <p>The data is provided by you, and not verified in any way (other than json is actually json). If the API changes, you will need to update the config, or you will run against incorrect configuration. Most stable services don't remove fields willy-nilly.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
-<p>In order to use <code>/dev/null</code> you will need to provide a config file.</p>
+<p>In order to use Quorra you will need to provide a config file.</p>
 <p>The simpled config file is</p>
 <pre><code class="language-toml">[http]
 address = &quot;127.0.0.1:8080&quot;
 </code></pre>
-<p>This will let <code>/dev/null</code> to listen on <code>127.0.0.1</code>, and on port <code>8080</code>.</p>
+<p>This will let Quorra to listen on <code>127.0.0.1</code>, and on port <code>8080</code>.</p>
 <h2 id="pro-tip"><a class="header" href="#pro-tip">Pro Tip</a></h2>
 <p>When used in a large application, defining the static plugin multiple times will allow teams to own specific files. Seperate the ownership based on your ownership model.</p>
 <h2 id="plugins"><a class="header" href="#plugins">Plugins</a></h2>
 <p>To configure plugins, you will need to add something like</p>
-<pre><code class="language-toml">[[http.plugin]]
-source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quot; }
+<pre><code class="language-toml">[responses]
+paths = [
+    &quot;foo/**/*.yaml&quot;
+]
 </code></pre>
+<p>Quorra will then scan the listed files for plugin definitions.</p>
 <p>For proper values, review the <a href="./plugins.html">plugins</a> to see how to configure each plugin.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="plugins-1"><a class="header" href="#plugins-1">Plugins</a></h1>
-<p><code>/dev/null</code> works on plugins. The app itself, is very dump, <em>you</em> are the one who makes it intelligent.</p>
-<p>In order to allow develoeprs to work with their own use-cases, <code>/dev/null</code> provides three plugins:</p>
+<p>Quorra works on plugins. The app itself, is very dump, <em>you</em> are the one who makes it intelligent.</p>
+<p>In order to allow develoeprs to work with their own use-cases, Quorra provides three plugins:</p>
 <ul>
 <li><a href="./plugin/static-response.html">Static Content</a></li>
 <li><a href="./plugin/lua.html">Lua</a></li>
@@ -176,7 +179,7 @@ source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quo
 </ul>
 <h2 id="static-content"><a class="header" href="#static-content">Static Content</a></h2>
 <p>This is the simplest, and requires no coding on your part.</p>
-<p>Fill out a config file, and <code>/dev/null</code> will match the incoming HTTP request with a known response, and respond! It's that easy.</p>
+<p>Fill out a config file, and Quorra will match the incoming HTTP request with a known response, and respond! It's that easy.</p>
 <h2 id="lua"><a class="header" href="#lua">Lua</a></h2>
 <p>Do you need more control? Then Lua based config will be an option. The Lua script will get every request (assuming nothing else responded to it) and will be able to decide if it wants to respond. If it does, it will be able to fill out the response metadata.</p>
 <h2 id="wasm"><a class="header" href="#wasm">WASM</a></h2>
@@ -190,69 +193,73 @@ source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quo
 <li>JSON formatted responses</li>
 </ul>
 <h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
-<p>To configure a static response, two different configurations need to be provided. First telling <code>/dev/null</code> about the static plugin.</p>
+<p>To configure a static response, two different configurations need to be provided. First telling Quorra about the static plugin.</p>
 <p>Within your application config file, usualy <code>config.toml</code> add the following snippit.</p>
-<pre><code class="language-toml">[[http.plugin]]
-source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quot; }
+<pre><code class="language-toml">[responses]
+paths = [
+    &quot;*.yaml&quot;
+]
 </code></pre>
-<p>This will configure <code>/dev/null</code> to use the static plugin and read the static config from <code>./static-rest.yaml</code>. The path in <code>config_path</code> is relative to the application path. For production deployments using an absolute path is best.</p>
+<p>This will configure Quorra to scan for plugins using the glob and read the static config from <code>./static-rest.yaml</code>. The path in <code>paths</code> is relative to the application path. For production deployments using an absolute path is best.</p>
 <p>Next create <code>./static-rest.yaml</code> with the contents</p>
-<pre><code class="language-yaml">http:
-  - matches:
-    - path: /echo
-    responses:
-      - headers: {}
-        body:
-          type: raw
-          data: '{{ request_body }}'
-        status: 200
-        weight: 5
-      - body:
-          type: raw
-          data: '{}'
-        status: 500
-  - matches:
-    - path: /graphql
-      methods:
-       - POST
-      graphql:  
-        operation-name: coolQuery
-    responses:
-      - headers: {}
-        body:
-          type: json
-          data: |
-            {
-              &quot;uuid&quot;: &quot;{{ uuid }}&quot;,
-              &quot;id&quot;: {{ id }}
-            }
-        status: 200
+<pre><code class="language-yaml">type: static-http
+matches:
+  - path: /echo
+    method: [GET]
+responses:
+  - headers: {}
+    body:
+      type: raw
+      data: '{{ request_body }}'
+    status: 200
+    weight: 5
+  - body:
+      type: raw
+      data: '{}'
+    status: 500
 </code></pre>
-<p>In this example two endpoints will be registered.</p>
-<p>The first <code>/echo</code>, which will respond with the request body 5-1 times, the 1 time will be a 500.
-The second is <code>/graphql</code>, which matches the the operationName is <code>coolQuery</code>, and will respond with a JSON object containing <code>uuid</code> and <code>id</code>.</p>
+<p>This example, when the path is <code>/echo</code>, which will respond with the request body 5-1 times, the 1 time will be a 500.</p>
+<p>To match against graphql, a file <code>./graphql.yaml</code> with the contents</p>
+<pre><code class="language-yaml">type: static-http
+matches:
+- path: /graphql
+  methods:
+    - POST
+  graphql:  
+    operation-name: coolQuery
+responses:
+  - headers: {}
+    body:
+      type: json
+      data: |
+        {
+          &quot;uuid&quot;: &quot;{{ uuid }}&quot;,
+          &quot;id&quot;: {{ id }}
+        }
+    status: 200
+</code></pre>
+<p>This file will match a path <code>/graphql</code>, which matches the the operationName is <code>coolQuery</code>, and will respond with a JSON object containing <code>uuid</code> and <code>id</code>.</p>
 <h3 id="pro-tip-1"><a class="header" href="#pro-tip-1">Pro Tip</a></h3>
 <p>In production we recommend setting ID's to something useful. That way when you are unsure about where a response came from you can trace it by the response headers.</p>
 <h2 id="magic-values"><a class="header" href="#magic-values">Magic Values</a></h2>
 <p>We use Handlebars to add dynamic values to the response. This is most often used with ID responses.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>uuid</code></td><td>A random UUID Version 4</td></tr>
-<tr><td><code>id</code></td><td>A sequential unsigned number. This value will reset when <code>/dev/null</code> restarts.</td></tr>
-<tr><td><code>dev_null_plugin_id</code></td><td>The Plugin Id that matched</td></tr>
-<tr><td><code>dev_null_payload_id</code></td><td>The Payload Id that matched</td></tr>
+<tr><td><code>id</code></td><td>A sequential unsigned number. This value will reset when Quorra restarts.</td></tr>
+<tr><td><code>quorra_payload_id</code></td><td>The Payload Id that matched</td></tr>
 <tr><td><code>request_body</code></td><td>The entire request body</td></tr>
 </tbody></table>
 </div>
 <h2 id="file-structure"><a class="header" href="#file-structure">File structure</a></h2>
-<p>At the moment, <code>/dev/null</code> only supports http requests, so all entries are under <code>http</code>.</p>
+<p>At the moment, Quorra only supports http requests, so all entries are under <code>http</code>.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-plugin-id</code> header</td></tr>
+<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-quorra-plugin-id</code> header</td></tr>
 <tr><td><code>http</code></td><td>An arry of Http Payload Config</td></tr>
 </tbody></table>
 </div>
 <h3 id="http---http-payload-config"><a class="header" href="#http---http-payload-config"><code>http</code> - HTTP Payload config</a></h3>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-payload-id</code> header</td></tr>
+<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-quorra-payload-id</code> header</td></tr>
 <tr><td><code>matches</code></td><td>An array of matches. See below for configuration options.</td></tr>
 <tr><td><code>responses</code></td><td>An array of responses. See below for configuration options.</td></tr>
 </tbody></table>
@@ -270,7 +277,7 @@ The second is <code>/graphql</code>, which matches the the operationName is <cod
 <h3 id="responses---response-options"><a class="header" href="#responses---response-options"><code>responses</code> - Response Options</a></h3>
 <p>A list of possible responses. At least one with a weight of &gt; 0 required.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-payload-id</code> header</td></tr>
+<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-quorra-payload-id</code> header</td></tr>
 <tr><td><code>headers</code></td><td>Optional, when set a key-value list of headers that will be included in the response</td></tr>
 <tr><td><code>body.type</code></td><td>Either <code>json</code> or <code>raw</code> depending on the data being responded with</td></tr>
 <tr><td><code>body.data</code></td><td>Is a string that will be used as the response</td></tr>
@@ -283,7 +290,7 @@ The second is <code>/graphql</code>, which matches the the operationName is <cod
 <div style="break-before: page; page-break-before: always;"></div><h1 id="wasm-1"><a class="header" href="#wasm-1">WASM</a></h1>
 <p>Planned, but not yet ready.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="developing"><a class="header" href="#developing">Developing</a></h1>
-<p>In order to work on <code>/dev/null</code> you'll need to have Rust installed. We recommend using <a href="https://rustup.rs"><code>rustup</code></a>.</p>
+<p>In order to work on Quorra you'll need to have Rust installed. We recommend using <a href="https://rustup.rs"><code>rustup</code></a>.</p>
 <p>The repo has a default config that can be used to test with. To use this configuration run <code>cargo run -- -c example/config.toml -d</code>.</p>
 <p>When running, metrics will be send to a local OTEL server. You'll also need to run these services by running <code>docker compose -f docker-compose.dev.yaml up</code>.</p>
 <h2 id="contributing"><a class="header" href="#contributing">Contributing</a></h2>

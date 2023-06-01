@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Static Response - /dev/null Service</title>
+        <title>Static Response - Quorra Service</title>
 
 
         <!-- Custom HTML head -->
@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../why_do_i_exist.html"><strong aria-hidden="true">1.</strong> Why does /dev/null exist?</a></li><li class="chapter-item expanded "><a href="../config.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../plugins.html"><strong aria-hidden="true">3.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plugin/static-response.html" class="active"><strong aria-hidden="true">3.1.</strong> Static Response</a></li><li class="chapter-item expanded "><a href="../plugin/lua.html"><strong aria-hidden="true">3.2.</strong> Lua</a></li><li class="chapter-item expanded "><a href="../plugin/wasm.html"><strong aria-hidden="true">3.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../developer/index.html"><strong aria-hidden="true">4.</strong> Developer</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../why_do_i_exist.html"><strong aria-hidden="true">1.</strong> Why does Quorra exist?</a></li><li class="chapter-item expanded "><a href="../config.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../plugins.html"><strong aria-hidden="true">3.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plugin/static-response.html" class="active"><strong aria-hidden="true">3.1.</strong> Static Response</a></li><li class="chapter-item expanded "><a href="../plugin/lua.html"><strong aria-hidden="true">3.2.</strong> Lua</a></li><li class="chapter-item expanded "><a href="../plugin/wasm.html"><strong aria-hidden="true">3.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../developer/index.html"><strong aria-hidden="true">4.</strong> Developer</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -112,7 +112,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">/dev/null Service</h1>
+                    <h1 class="menu-title">Quorra Service</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -153,69 +153,73 @@
 <li>JSON formatted responses</li>
 </ul>
 <h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
-<p>To configure a static response, two different configurations need to be provided. First telling <code>/dev/null</code> about the static plugin.</p>
+<p>To configure a static response, two different configurations need to be provided. First telling Quorra about the static plugin.</p>
 <p>Within your application config file, usualy <code>config.toml</code> add the following snippit.</p>
-<pre><code class="language-toml">[[http.plugin]]
-source = { type = &quot;static&quot;, config_path = &quot;./static-rest.yaml&quot; }
+<pre><code class="language-toml">[responses]
+paths = [
+    &quot;*.yaml&quot;
+]
 </code></pre>
-<p>This will configure <code>/dev/null</code> to use the static plugin and read the static config from <code>./static-rest.yaml</code>. The path in <code>config_path</code> is relative to the application path. For production deployments using an absolute path is best.</p>
+<p>This will configure Quorra to scan for plugins using the glob and read the static config from <code>./static-rest.yaml</code>. The path in <code>paths</code> is relative to the application path. For production deployments using an absolute path is best.</p>
 <p>Next create <code>./static-rest.yaml</code> with the contents</p>
-<pre><code class="language-yaml">http:
-  - matches:
-    - path: /echo
-    responses:
-      - headers: {}
-        body:
-          type: raw
-          data: '{{ request_body }}'
-        status: 200
-        weight: 5
-      - body:
-          type: raw
-          data: '{}'
-        status: 500
-  - matches:
-    - path: /graphql
-      methods:
-       - POST
-      graphql:  
-        operation-name: coolQuery
-    responses:
-      - headers: {}
-        body:
-          type: json
-          data: |
-            {
-              &quot;uuid&quot;: &quot;{{ uuid }}&quot;,
-              &quot;id&quot;: {{ id }}
-            }
-        status: 200
+<pre><code class="language-yaml">type: static-http
+matches:
+  - path: /echo
+    method: [GET]
+responses:
+  - headers: {}
+    body:
+      type: raw
+      data: '{{ request_body }}'
+    status: 200
+    weight: 5
+  - body:
+      type: raw
+      data: '{}'
+    status: 500
 </code></pre>
-<p>In this example two endpoints will be registered.</p>
-<p>The first <code>/echo</code>, which will respond with the request body 5-1 times, the 1 time will be a 500.
-The second is <code>/graphql</code>, which matches the the operationName is <code>coolQuery</code>, and will respond with a JSON object containing <code>uuid</code> and <code>id</code>.</p>
+<p>This example, when the path is <code>/echo</code>, which will respond with the request body 5-1 times, the 1 time will be a 500.</p>
+<p>To match against graphql, a file <code>./graphql.yaml</code> with the contents</p>
+<pre><code class="language-yaml">type: static-http
+matches:
+- path: /graphql
+  methods:
+    - POST
+  graphql:  
+    operation-name: coolQuery
+responses:
+  - headers: {}
+    body:
+      type: json
+      data: |
+        {
+          &quot;uuid&quot;: &quot;{{ uuid }}&quot;,
+          &quot;id&quot;: {{ id }}
+        }
+    status: 200
+</code></pre>
+<p>This file will match a path <code>/graphql</code>, which matches the the operationName is <code>coolQuery</code>, and will respond with a JSON object containing <code>uuid</code> and <code>id</code>.</p>
 <h3 id="pro-tip"><a class="header" href="#pro-tip">Pro Tip</a></h3>
 <p>In production we recommend setting ID's to something useful. That way when you are unsure about where a response came from you can trace it by the response headers.</p>
 <h2 id="magic-values"><a class="header" href="#magic-values">Magic Values</a></h2>
 <p>We use Handlebars to add dynamic values to the response. This is most often used with ID responses.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>uuid</code></td><td>A random UUID Version 4</td></tr>
-<tr><td><code>id</code></td><td>A sequential unsigned number. This value will reset when <code>/dev/null</code> restarts.</td></tr>
-<tr><td><code>dev_null_plugin_id</code></td><td>The Plugin Id that matched</td></tr>
-<tr><td><code>dev_null_payload_id</code></td><td>The Payload Id that matched</td></tr>
+<tr><td><code>id</code></td><td>A sequential unsigned number. This value will reset when Quorra restarts.</td></tr>
+<tr><td><code>quorra_payload_id</code></td><td>The Payload Id that matched</td></tr>
 <tr><td><code>request_body</code></td><td>The entire request body</td></tr>
 </tbody></table>
 </div>
 <h2 id="file-structure"><a class="header" href="#file-structure">File structure</a></h2>
-<p>At the moment, <code>/dev/null</code> only supports http requests, so all entries are under <code>http</code>.</p>
+<p>At the moment, Quorra only supports http requests, so all entries are under <code>http</code>.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-plugin-id</code> header</td></tr>
+<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-quorra-plugin-id</code> header</td></tr>
 <tr><td><code>http</code></td><td>An arry of Http Payload Config</td></tr>
 </tbody></table>
 </div>
 <h3 id="http---http-payload-config"><a class="header" href="#http---http-payload-config"><code>http</code> - HTTP Payload config</a></h3>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-payload-id</code> header</td></tr>
+<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-quorra-payload-id</code> header</td></tr>
 <tr><td><code>matches</code></td><td>An array of matches. See below for configuration options.</td></tr>
 <tr><td><code>responses</code></td><td>An array of responses. See below for configuration options.</td></tr>
 </tbody></table>
@@ -233,7 +237,7 @@ The second is <code>/graphql</code>, which matches the the operationName is <cod
 <h3 id="responses---response-options"><a class="header" href="#responses---response-options"><code>responses</code> - Response Options</a></h3>
 <p>A list of possible responses. At least one with a weight of &gt; 0 required.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-dev-null-payload-id</code> header</td></tr>
+<tr><td><code>id</code></td><td>When not present, will be genreated. The <code>id</code> is included as <code>x-quorra-payload-id</code> header</td></tr>
 <tr><td><code>headers</code></td><td>Optional, when set a key-value list of headers that will be included in the response</td></tr>
 <tr><td><code>body.type</code></td><td>Either <code>json</code> or <code>raw</code> depending on the data being responded with</td></tr>
 <tr><td><code>body.data</code></td><td>Is a string that will be used as the response</td></tr>

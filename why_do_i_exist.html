@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Why does /dev/null exist? - /dev/null Service</title>
+        <title>Why does Quorra exist? - Quorra Service</title>
 
 
         <!-- Custom HTML head -->
@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="why_do_i_exist.html" class="active"><strong aria-hidden="true">1.</strong> Why does /dev/null exist?</a></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="plugins.html"><strong aria-hidden="true">3.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/static-response.html"><strong aria-hidden="true">3.1.</strong> Static Response</a></li><li class="chapter-item expanded "><a href="plugin/lua.html"><strong aria-hidden="true">3.2.</strong> Lua</a></li><li class="chapter-item expanded "><a href="plugin/wasm.html"><strong aria-hidden="true">3.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="developer/index.html"><strong aria-hidden="true">4.</strong> Developer</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="why_do_i_exist.html" class="active"><strong aria-hidden="true">1.</strong> Why does Quorra exist?</a></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="plugins.html"><strong aria-hidden="true">3.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/static-response.html"><strong aria-hidden="true">3.1.</strong> Static Response</a></li><li class="chapter-item expanded "><a href="plugin/lua.html"><strong aria-hidden="true">3.2.</strong> Lua</a></li><li class="chapter-item expanded "><a href="plugin/wasm.html"><strong aria-hidden="true">3.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="developer/index.html"><strong aria-hidden="true">4.</strong> Developer</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -112,7 +112,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">/dev/null Service</h1>
+                    <h1 class="menu-title">Quorra Service</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -144,10 +144,10 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="why-does-devnull-exist"><a class="header" href="#why-does-devnull-exist">Why does <code>/dev/null</code> exist?</a></h1>
-<p>The <code>/dev/null</code> service exists to allow engineers to <a href="https://en.wikipedia.org/wiki/Black-box_testing">blackbox</a> test their service dependencies.</p>
-<p>As services mature and grow, they end up taking on many dependencies. Often those dependencies don't have a &quot;sandbox&quot; account that acts correctly. That's where the <code>/dev/null</code> service comes in. It pretends to be that service, and will respond with whatever text/json you want.</p>
-<p>This means you can record some normal API interactions, then <em>save</em> those into a config file, and <code>/dev/null</code> will respond with that data.</p>
+                        <h1 id="why-does-quorra-exist"><a class="header" href="#why-does-quorra-exist">Why does Quorra exist?</a></h1>
+<p>The Quorra service exists to allow engineers to <a href="https://en.wikipedia.org/wiki/Black-box_testing">blackbox</a> test their service dependencies.</p>
+<p>As services mature and grow, they end up taking on many dependencies. Often those dependencies don't have a &quot;sandbox&quot; account that acts correctly. That's where the Quorra service comes in. It pretends to be that service, and will respond with whatever text/json you want.</p>
+<p>This means you can record some normal API interactions, then <em>save</em> those into a config file, and Quorra will respond with that data.</p>
 <h2 id="whats-the-catch"><a class="header" href="#whats-the-catch">What's the catch?</a></h2>
 <p>The data is provided by you, and not verified in any way (other than json is actually json). If the API changes, you will need to update the config, or you will run against incorrect configuration. Most stable services don't remove fields willy-nilly.</p>
 
