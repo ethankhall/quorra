@@ -1,10 +1,10 @@
 use crate::HttpPluginError;
-use quorra_config::prelude::*;
 use http::{
     header::CONTENT_TYPE,
     header::{HeaderMap, HeaderName, HeaderValue},
     Method, StatusCode,
 };
+use quorra_config::prelude::*;
 use rand::{seq::SliceRandom, thread_rng};
 use regex::Regex;
 use std::str::FromStr;

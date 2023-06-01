@@ -3,9 +3,9 @@ use thiserror::Error;
 mod config;
 mod http_static;
 
-use quorra_config::prelude::StaticHttpConfig;
 use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext};
 use lazy_static::lazy_static;
+use quorra_config::prelude::StaticHttpConfig;
 use std::{
     sync::atomic::{AtomicU64, Ordering},
     sync::RwLock,

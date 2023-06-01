@@ -93,10 +93,7 @@ pub fn configure_logging(logging_opts: &LoggingOpts, runtime_args: &RuntimeArgs)
                 .with_max_events_per_span(64)
                 .with_max_attributes_per_span(16)
                 .with_max_events_per_span(16)
-                .with_resource(Resource::new(vec![KeyValue::new(
-                    "service.name",
-                    "quorra",
-                )])),
+                .with_resource(Resource::new(vec![KeyValue::new("service.name", "quorra")])),
         )
         .install_batch(runtime::Tokio)
         .unwrap();

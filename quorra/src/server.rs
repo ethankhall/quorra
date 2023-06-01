@@ -3,13 +3,13 @@ use std::path::PathBuf;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use quorra_config::ConfigContainer;
-use quorra_plugin::HyperService;
 use http::{
     header::{HeaderName, AUTHORIZATION},
     HeaderValue, Request,
 };
 use hyper::{server::Server, service::service_fn};
+use quorra_config::ConfigContainer;
+use quorra_plugin::HyperService;
 use std::{iter::once, net::SocketAddr, sync::Arc};
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{
@@ -24,7 +24,12 @@ pub struct ServerCommandConfig {
     /// Location of root config file
     pub config_file: PathBuf,
 
-    #[clap(long = "listen", short, env = "SERVER_LISTEN", default_value("127.0.0.1:3000"))]
+    #[clap(
+        long = "listen",
+        short,
+        env = "SERVER_LISTEN",
+        default_value("127.0.0.1:3000")
+    )]
     pub listen_address: String,
 }
 
