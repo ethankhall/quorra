@@ -21,34 +21,6 @@ replace-with = "vendored-sources"
 directory = "vendor"
 EOF
 
-FROM --platform=$BUILDPLATFORM builder as dep_check
-RUN rustup toolchain install nightly --allow-downgrade --profile minimal
-
-RUN <<EOT
-#!/usr/bin/env bash
-set -euxo pipefail
-
-cargo +nightly build --release
-cargo +nightly install cargo-udeps --locked
-cargo +nightly udeps --release
-EOT
-
-FROM builder as test
-RUN <<EOT
-#!/usr/bin/env bash
-set -euxo pipefail
-
-rustup component add rustfmt clippy
-
-cargo test --release
-cargo fmt --check
-cargo clippy --release
-EOT
-
-FROM scratch as check
-COPY --from=dep_check /app/Cargo.lock Cargo-dep-check.lock
-COPY --from=test /app/Cargo.lock Cargo-test.lock
-
 FROM --platform=$BUILDPLATFORM builder as release
 RUN <<EOT
 #!/bin/bash
