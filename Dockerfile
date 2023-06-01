@@ -1,26 +1,26 @@
 # syntax=docker/dockerfile:1.4
-FROM rust:bullseye as chef
-COPY rust-toolchain.toml rust-toolchain.toml
+FROM rust:bullseye as builder
 RUN <<EOT
 #!/usr/bin/env bash
 set -euxo pipefail
 
 apt-get update
 apt-get install protobuf-compiler -y
-cargo install cargo-chef
 EOT
 
 WORKDIR /app
+COPY rust-toolchain.toml /app/rust-toolchain.toml
+RUN cargo
 
-FROM chef AS planner
-COPY . .
-RUN cargo chef prepare  --recipe-path recipe.json
+COPY . /app/
+RUN ls vendor
+COPY <<EOF /app/.cargo/config.toml 
+[source.crates-io]
+replace-with = "vendored-sources"
 
-FROM chef AS builder
-COPY --from=planner /app/recipe.json recipe.json
-# Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json
-COPY . .
+[source.vendored-sources]
+directory = "vendor"
+EOF
 
 FROM builder as dep_check
 RUN rustup toolchain install nightly --allow-downgrade --profile minimal
@@ -47,8 +47,8 @@ cargo clippy --release
 EOT
 
 FROM scratch as check
-COPY --from=dep_check /app/recipe.json recipe-dep-check.json
-COPY --from=test /app/recipe.json recipe-test.json
+COPY --from=dep_check /app/Cargo.lock Cargo-dep-check.lock
+COPY --from=test /app/Cargo.lock Cargo-test.lock
 
 FROM builder as release
 RUN cargo build --release --bin quorra

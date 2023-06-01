@@ -20,6 +20,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions-rs/toolchain@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: vendor
       - name: validate artifact
         run: |
           docker buildx build \
@@ -54,6 +58,7 @@ jobs:
     needs: create-release
     with:
       version: ${{ needs.create-release.outputs.version }}
+      registry: ghcr.io/ethankhall/quorra-snapshot
 
   remove-draft:
     runs-on: ubuntu-latest
