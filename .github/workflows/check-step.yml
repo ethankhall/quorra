@@ -1,0 +1,52 @@
+name: Check
+
+on:
+  workflow_call:
+
+jobs:
+  tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+      - uses: actions/checkout@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+  formatting:
+    name: Run Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+      - uses: actions/checkout@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+  # dependencies:
+  #   name: Run Dependency Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: install deps
+  #       run: |
+  #         apt-get update
+  #         apt-get install -y protobuf-compiler
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: install
+  #         args: cargo-udeps
+  #         toolchain: nightly
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: udeps
+  #         toolchain: nightly
