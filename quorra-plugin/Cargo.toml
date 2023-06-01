@@ -1,20 +1,18 @@
 [package]
-name = "dev-null-har"
+name = "quorra-plugin"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
 categories = ["development-tools::testing"]
 
 [dependencies]
-dev-null-config = { path = "../dev-null-config" }
+tokio = { version = "1", features = ["full"] }
 async-trait = "0.1.61"
 thiserror = "1"
 anyhow = "1"
 tracing-core = "*"
 tracing = "0.1"
 tracing-attributes = "0.1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-serde_yaml = "0.9"
-url = "2"
-md5 = "0.7.0"
+hyper = { version = "0.14", features = ["full"] }
+http = "0.2"
+bytes = "1.3"

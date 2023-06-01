@@ -23,8 +23,8 @@ jobs:
       - name: validate artifact
         run: |
           docker buildx build \
-            --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
-            --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate \
+            --cache-from type=registry,ref=ghcr.io/ethankhall/quorra-cache \
+            --cache-from type=registry,ref=ghcr.io/ethankhall/quorra-cache:validate \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --target check .
 

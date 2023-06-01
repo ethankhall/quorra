@@ -1,5 +1,5 @@
 use crate::HttpPluginError;
-use dev_null_config::prelude::*;
+use quorra_config::prelude::*;
 use http::{
     header::CONTENT_TYPE,
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -234,7 +234,7 @@ fn add_header(headers: &mut HeaderMap, name: &str, value: &str) {
         Err(_) => HeaderValue::from_str(&format!("{} invalid header", name)).unwrap(),
     };
     headers.insert(
-        HeaderName::from_str(&format!("x-dev-null-{}", name)).unwrap(),
+        HeaderName::from_str(&format!("x-quorra-{}", name)).unwrap(),
         value,
     );
 }

@@ -25,7 +25,7 @@ impl StaticResponse {
         sleep(self.delay).await;
 
         let values = BTreeMap::from([
-            ("dev_null_payload_id", Value::from(payload_id)),
+            ("quorra_payload_id", Value::from(payload_id)),
             ("request_body", body_string),
         ]);
 
@@ -33,7 +33,7 @@ impl StaticResponse {
         let body = match handlebars.render(&self.handlebar_template_id, &values) {
             Ok(body) => body,
             Err(e) => format!(
-                "DevNull encoundered an error rendering the response. Error {}",
+                "Quorra encoundered an error rendering the response. Error {}",
                 e
             ),
         };
@@ -317,7 +317,7 @@ pub struct HttpStaticPlugin {
 }
 
 #[async_trait]
-impl dev_null_plugin::HttpPlugin for HttpStaticPlugin {
+impl quorra_plugin::HttpPlugin for HttpStaticPlugin {
     #[instrument(skip_all)]
     async fn respond_to_request(
         &self,

@@ -1,8 +1,8 @@
 # Plugins
 
-`/dev/null` works on plugins. The app itself, is very dump, _you_ are the one who makes it intelligent.
+Quorra works on plugins. The app itself, is very dump, _you_ are the one who makes it intelligent.
 
-In order to allow develoeprs to work with their own use-cases, `/dev/null` provides three plugins:
+In order to allow develoeprs to work with their own use-cases, Quorra provides three plugins:
 
 - [Static Content](./plugin/static-response.md)
 - [Lua](./plugin/lua.md)
@@ -12,7 +12,7 @@ In order to allow develoeprs to work with their own use-cases, `/dev/null` provi
 
 This is the simplest, and requires no coding on your part.
 
-Fill out a config file, and `/dev/null` will match the incoming HTTP request with a known response, and respond! It's that easy.
+Fill out a config file, and Quorra will match the incoming HTTP request with a known response, and respond! It's that easy.
 
 ## Lua
 

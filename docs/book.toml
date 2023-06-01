@@ -3,4 +3,4 @@ authors = ["Ethan Hall"]
 language = "en"
 multilingual = false
 src = "src"
-title = "/dev/null Service"
+title = "Quorra Service"

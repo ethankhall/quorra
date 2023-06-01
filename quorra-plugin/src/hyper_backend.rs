@@ -38,7 +38,7 @@ impl HyperService {
 
                 return Ok(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .header("x-dev-null-source", "internal")
+                    .header("x-quorra-source", "internal")
                     .body(Body::empty())?);
             }
         };

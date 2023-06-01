@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// The root confguration for `/dev/null` providing configuration options
+/// The root confguration for Quorra providing configuration options
 /// for the different server backends.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]

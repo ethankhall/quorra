@@ -440,126 +440,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dev-null"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "atty",
- "bytes",
- "clap",
- "dev-null-config",
- "dev-null-har",
- "dev-null-plugin",
- "dev-null-plugin-http",
- "dotenv",
- "futures",
- "http",
- "human-panic",
- "hyper",
- "json",
- "lazy_static",
- "opentelemetry",
- "opentelemetry-otlp",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tokio",
- "toml",
- "tower",
- "tower-http",
- "tracing",
- "tracing-attributes",
- "tracing-core",
- "tracing-log",
- "tracing-opentelemetry",
- "tracing-subscriber",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "dev-null-config"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "config",
- "glob",
- "serde",
- "serde_with",
- "thiserror",
- "toml",
- "tracing",
- "tracing-attributes",
- "tracing-core",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "dev-null-har"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "dev-null-config",
- "md5",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tracing",
- "tracing-attributes",
- "tracing-core",
- "url",
-]
-
-[[package]]
-name = "dev-null-plugin"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bytes",
- "http",
- "hyper",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-attributes",
- "tracing-core",
-]
-
-[[package]]
-name = "dev-null-plugin-http"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bytes",
- "dev-null-config",
- "dev-null-plugin",
- "form_urlencoded",
- "handlebars",
- "http",
- "hyper",
- "json",
- "lazy_static",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tokio",
- "toml",
- "tracing",
- "uuid 1.2.2",
-]
-
-[[package]]
 name = "digest"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1582,6 +1462,126 @@ checksum = "a5e0526209433e96d83d750dd81a99118edbc55739e7e61a46764fd2ad537788"
 dependencies = [
  "bytes",
  "prost",
+]
+
+[[package]]
+name = "quorra"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "atty",
+ "bytes",
+ "clap",
+ "dotenv",
+ "futures",
+ "http",
+ "human-panic",
+ "hyper",
+ "json",
+ "lazy_static",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "quorra-config",
+ "quorra-har",
+ "quorra-plugin",
+ "quorra-plugin-http",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-attributes",
+ "tracing-core",
+ "tracing-log",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "quorra-config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "config",
+ "glob",
+ "serde",
+ "serde_with",
+ "thiserror",
+ "toml",
+ "tracing",
+ "tracing-attributes",
+ "tracing-core",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "quorra-har"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "md5",
+ "quorra-config",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tracing",
+ "tracing-attributes",
+ "tracing-core",
+ "url",
+]
+
+[[package]]
+name = "quorra-plugin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bytes",
+ "http",
+ "hyper",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-attributes",
+ "tracing-core",
+]
+
+[[package]]
+name = "quorra-plugin-http"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bytes",
+ "form_urlencoded",
+ "handlebars",
+ "http",
+ "hyper",
+ "json",
+ "lazy_static",
+ "quorra-config",
+ "quorra-plugin",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tracing",
+ "uuid 1.2.2",
 ]
 
 [[package]]

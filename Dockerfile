@@ -51,12 +51,13 @@ COPY --from=dep_check /app/recipe.json recipe-dep-check.json
 COPY --from=test /app/recipe.json recipe-test.json
 
 FROM builder as release
-RUN cargo build --release --bin dev-null
-RUN /app/target/release/dev-null --help
+RUN cargo build --release --bin quorra
+RUN /app/target/release/quorra --help
 
 FROM debian:bullseye-slim AS runtime
+
 RUN apt-get update && apt-get install tini -y
 WORKDIR /app
-COPY --from=release /app/target/release/dev-null /usr/local/bin
+COPY --from=release /app/target/release/quorra /usr/local/bin
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/usr/local/bin/dev-null", "server"]
+CMD ["/usr/local/bin/quorra", "server"]

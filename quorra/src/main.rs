@@ -1,5 +1,5 @@
 use clap::Parser;
-use dev_null_config::ConfigContainer;
+use quorra_config::ConfigContainer;
 use std::{path::Path, process::ExitCode, time::Duration};
 use tokio::sync::RwLock;
 use tracing::{debug, error, warn};
@@ -9,7 +9,7 @@ mod convert_har;
 mod server;
 
 use config::Opts;
-use dev_null_plugin::HyperService;
+use quorra_plugin::HyperService;
 use std::sync::Arc;
 
 pub fn unique_id() -> String {

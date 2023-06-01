@@ -1,6 +1,6 @@
 # Developing
 
-In order to work on `/dev/null` you'll need to have Rust installed. We recommend using [`rustup`](https://rustup.rs).
+In order to work on Quorra you'll need to have Rust installed. We recommend using [`rustup`](https://rustup.rs).
 
 The repo has a default config that can be used to test with. To use this configuration run `cargo run -- -c example/config.toml -d`.
 

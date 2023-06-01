@@ -1,9 +1,9 @@
 [workspace]
 
 members = [
-    "dev-null",
-    "dev-null-config",
-    "dev-null-har",
-    "dev-null-plugin-http",
-    "dev-null-plugin"
+    "quorra",
+    "quorra-config",
+    "quorra-har",
+    "quorra-plugin-http",
+    "quorra-plugin"
 ]

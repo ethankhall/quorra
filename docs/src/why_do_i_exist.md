@@ -1,10 +1,10 @@
-# Why does `/dev/null` exist?
+# Why does Quorra exist?
 
-The `/dev/null` service exists to allow engineers to [blackbox](https://en.wikipedia.org/wiki/Black-box_testing) test their service dependencies.
+The Quorra service exists to allow engineers to [blackbox](https://en.wikipedia.org/wiki/Black-box_testing) test their service dependencies.
 
-As services mature and grow, they end up taking on many dependencies. Often those dependencies don't have a "sandbox" account that acts correctly. That's where the `/dev/null` service comes in. It pretends to be that service, and will respond with whatever text/json you want.
+As services mature and grow, they end up taking on many dependencies. Often those dependencies don't have a "sandbox" account that acts correctly. That's where the Quorra service comes in. It pretends to be that service, and will respond with whatever text/json you want.
 
-This means you can record some normal API interactions, then _save_ those into a config file, and `/dev/null` will respond with that data.
+This means you can record some normal API interactions, then _save_ those into a config file, and Quorra will respond with that data.
 
 ## What's the catch?
 

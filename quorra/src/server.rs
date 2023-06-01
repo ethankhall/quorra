@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use dev_null_config::ConfigContainer;
-use dev_null_plugin::HyperService;
+use quorra_config::ConfigContainer;
+use quorra_plugin::HyperService;
 use http::{
     header::{HeaderName, AUTHORIZATION},
     HeaderValue, Request,
@@ -20,11 +20,11 @@ use tower_http::{
 
 #[derive(Parser, Debug)]
 pub struct ServerCommandConfig {
-    #[clap(long, short, env = "CONFIG_PATH")]
+    #[clap(long = "config", short, env = "CONFIG_PATH")]
     /// Location of root config file
     pub config_file: PathBuf,
 
-    #[clap(long, short, env = "SERVER_LISTEN", default_value("127.0.0.1:3000"))]
+    #[clap(long = "listen", short, env = "SERVER_LISTEN", default_value("127.0.0.1:3000"))]
     pub listen_address: String,
 }
 
@@ -52,19 +52,19 @@ impl ServerCommandConfig {
             .layer(TraceLayer::new_for_http())
             .layer(CompressionLayer::new())
             .layer(SetResponseHeaderLayer::overriding(
-                HeaderName::from_static("x-dev-null"),
+                HeaderName::from_static("x-quorra"),
                 HeaderValue::from_static("true"),
             ))
             .layer(SetResponseHeaderLayer::if_not_present(
-                HeaderName::from_static("x-dev-null-plugin-id"),
+                HeaderName::from_static("x-quorra-plugin-id"),
                 HeaderValue::from_static("null"),
             ))
             .layer(SetResponseHeaderLayer::if_not_present(
-                HeaderName::from_static("x-dev-null-payload-id"),
+                HeaderName::from_static("x-quorra-payload-id"),
                 HeaderValue::from_static("null"),
             ))
             .layer(SetResponseHeaderLayer::if_not_present(
-                HeaderName::from_static("x-dev-null-response-id"),
+                HeaderName::from_static("x-quorra-response-id"),
                 HeaderValue::from_static("null"),
             ))
             // Propagate `X-Request-Id`s from requests to responses

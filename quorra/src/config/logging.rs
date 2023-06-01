@@ -53,7 +53,7 @@ pub struct RuntimeArgs {
 pub struct LoggingOpts {
     /// A level of verbosity, and can be used multiple times
     #[clap(short, long, action = ArgAction::Count, global(true), group = "logging")]
-    pub debug: u8,
+    pub verbose: u8,
 
     /// Enable warn logging
     #[clap(short, long, global(true), group = "logging")]
@@ -70,9 +70,9 @@ impl From<&LoggingOpts> for LevelFilter {
             LevelFilter::ERROR
         } else if opts.warn {
             LevelFilter::WARN
-        } else if opts.debug == 0 {
+        } else if opts.verbose == 0 {
             LevelFilter::INFO
-        } else if opts.debug == 1 {
+        } else if opts.verbose == 1 {
             LevelFilter::DEBUG
         } else {
             LevelFilter::TRACE
@@ -95,7 +95,7 @@ pub fn configure_logging(logging_opts: &LoggingOpts, runtime_args: &RuntimeArgs)
                 .with_max_events_per_span(16)
                 .with_resource(Resource::new(vec![KeyValue::new(
                     "service.name",
-                    "dev-null",
+                    "quorra",
                 )])),
         )
         .install_batch(runtime::Tokio)

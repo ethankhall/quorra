@@ -1,6 +1,6 @@
 # Configuration
 
-In order to use `/dev/null` you will need to provide a config file.
+In order to use Quorra you will need to provide a config file.
 
 The simpled config file is
 
@@ -9,7 +9,7 @@ The simpled config file is
 address = "127.0.0.1:8080"
 ```
 
-This will let `/dev/null` to listen on `127.0.0.1`, and on port `8080`.
+This will let Quorra to listen on `127.0.0.1`, and on port `8080`.
 
 ## Pro Tip
 
@@ -20,8 +20,12 @@ When used in a large application, defining the static plugin multiple times will
 To configure plugins, you will need to add something like
 
 ```toml
-[[http.plugin]]
-source = { type = "static", config_path = "./static-rest.yaml" }
+[responses]
+paths = [
+    "foo/**/*.yaml"
+]
 ```
+
+Quorra will then scan the listed files for plugin definitions.
 
 For proper values, review the [plugins](./plugins.md) to see how to configure each plugin.

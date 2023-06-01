@@ -1,5 +1,5 @@
 use clap::Parser;
-use dev_null_har::HarConvertor;
+use quorra_har::HarConvertor;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -8,7 +8,7 @@ pub struct ConvertHarCommandConfig {
     /// Input HAR file
     pub har_file: PathBuf,
 
-    #[clap(long("dest"))]
+    #[clap(long("destination"))]
     /// Where the converted files should be created
     pub dest_directory: PathBuf,
 }

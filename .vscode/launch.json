@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'dev-null'",
+            "name": "Debug executable 'quorra'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=dev-null",
-                    "--package=dev-null",
+                    "--bin=quorra",
+                    "--package=quorra",
                 ],
                 "filter": {
-                    "name": "dev-null",
+                    "name": "quorra",
                     "kind": "bin"
                 }
             },
@@ -29,16 +29,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'dev-null'",
+            "name": "Debug unit tests in executable 'quorra'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=dev-null",
-                    "--package=dev-null"
+                    "--bin=quorra",
+                    "--package=quorra"
                 ],
                 "filter": {
-                    "name": "dev-null",
+                    "name": "quorra",
                     "kind": "bin"
                 }
             },

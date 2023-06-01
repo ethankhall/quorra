@@ -1,6 +1,6 @@
 use crate::models::*;
 use anyhow::Error;
-use dev_null_config::prelude::*;
+use quorra_config::prelude::*;
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},

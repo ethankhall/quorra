@@ -1,6 +1,6 @@
-use dev_null_config::prelude::{ParsedUserConfig, ResponseConfig};
-use dev_null_plugin::HttpPlugin;
-use dev_null_plugin_http::HttpStaticPluginBuilder;
+use quorra_config::prelude::{ParsedUserConfig, ResponseConfig};
+use quorra_plugin::HttpPlugin;
+use quorra_plugin_http::HttpStaticPluginBuilder;
 
 use std::sync::Arc;
 

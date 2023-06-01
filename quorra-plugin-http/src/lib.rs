@@ -3,7 +3,7 @@ use thiserror::Error;
 mod config;
 mod http_static;
 
-use dev_null_config::prelude::StaticHttpConfig;
+use quorra_config::prelude::StaticHttpConfig;
 use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext};
 use lazy_static::lazy_static;
 use std::{

@@ -59,9 +59,9 @@ jobs:
         run: |
           set -e
           docker login ghcr.io --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
-          docker pull ghcr.io/ethankhall/dev-null:${{ needs.create-release.outputs.version }}
-          docker tag ghcr.io/ethankhall/dev-null:${{ needs.create-release.outputs.version }} ghcr.io/ethankhall/dev-null:latest
-          docker push ghcr.io/ethankhall/dev-null:latest
+          docker pull ghcr.io/ethankhall/quorra:${{ needs.create-release.outputs.version }}
+          docker tag ghcr.io/ethankhall/quorra:${{ needs.create-release.outputs.version }} ghcr.io/ethankhall/quorra:latest
+          docker push ghcr.io/ethankhall/quorra:latest
 
   check:
     name: Run Validates
@@ -79,8 +79,8 @@ jobs:
       - name: validate artifact
         run: |
           docker buildx build \
-            --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache \
-            --cache-from type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate \
-            --cache-to type=registry,ref=ghcr.io/ethankhall/dev-null-cache:validate,mode=max \
+            --cache-from type=registry,ref=ghcr.io/ethankhall/quorra-cache \
+            --cache-from type=registry,ref=ghcr.io/ethankhall/quorra-cache:validate \
+            --cache-to type=registry,ref=ghcr.io/ethankhall/quorra-cache:validate,mode=max \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --target check .
