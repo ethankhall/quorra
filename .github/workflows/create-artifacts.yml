@@ -24,7 +24,6 @@ jobs:
           images: ${{ inputs.registry }}
           tags: |
             type=raw,value=${{ inputs.version }}
-            type=ref,event=branch
             type=ref,event=pr
             type=sha
       - uses: docker/setup-qemu-action@v2
@@ -36,13 +35,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions-rs/cargo@v1
-        with:
-          command: vendor
+      - name: 'cargo vendor'
+        run: cargo vendor
       - name: Configure version
         run: |
           docker run --rm -v $(pwd):/target ghcr.io/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
-      - name: Build and push by digest
+      - name: Publish Image
         id: build
         uses: docker/build-push-action@v4
         with:
@@ -51,7 +49,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=ghcr.io/ethankhall/quorra-cache
-          name: Publish Image
+          push: true
 
   build-for-macos:
     runs-on: macos-latest
