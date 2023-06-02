@@ -47,12 +47,12 @@ pub struct StaticMatchesConfig {
 
     /// A list of String=String pairs that will be matched against the query params
     #[serde_as(as = "serde_with::Map<_, _>")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub query: Vec<(String, String)>,
 
     /// A map of key-value pairs. The key is the header name, the
     /// value used to match the header against.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub headers: BTreeMap<String, String>,
 
     /// A list of methods the request should be.
@@ -60,7 +60,7 @@ pub struct StaticMatchesConfig {
     pub methods: Vec<String>,
 
     /// Configuration for GraphQL body matchers
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graphql: Option<GraphqlStaticMatchConfig>,
 }
 
@@ -81,7 +81,7 @@ pub struct StaticResponseConfig<T> {
     #[serde(default = "default_weight")]
     pub weight: u16,
     pub status: u16,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub headers: BTreeMap<String, String>,
     #[serde(default)]
     pub body: Option<StaticResponseBodyConfig<T>>,

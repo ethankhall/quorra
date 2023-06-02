@@ -47,20 +47,29 @@ impl HarConvertor {
         }
 
         for (key, value) in wrapper_map {
-            let config = StaticHttpConfig {
+            let config = ResponseConfig::StaticHttp(StaticHttpConfig {
                 id: unique_id(),
                 matches: vec![key.clone()],
                 responses: value,
-            };
+            });
+
+            let output = serde_yaml::to_string(&config)?;
 
             let path = if key.path == "/" {
                 "/root.html"
             } else {
                 &key.path
             };
+            let filename = path.replace('/', "__");
+            let filename = filename.trim_matches('_');
+            let unique = format!("{:x}", md5::compute(&output));
 
-            let filename = format!("{}{}.yaml", key.methods[0], path.replace('/', "__"));
-            let output = serde_yaml::to_string(&config)?;
+            let filename = format!(
+                "{}_{}_{}.yaml",
+                key.methods[0],
+                filename,
+                unique[..6].chars().as_str()
+            );
             let path = dest.join(filename);
             info!("Writing file {}", path.display().to_string());
             std::fs::write(path, output)?;
@@ -70,20 +79,34 @@ impl HarConvertor {
     }
 }
 
-fn matcher_to_filename(request: &StaticMatchesConfig, unique: String) -> String {
+fn matcher_to_filename(wrapper: &EntryWrapperWithBody, unique: String) -> String {
+    let request = &wrapper.matcher;
     let path = if request.path == "/" {
         "/root.html"
     } else {
         &request.path
     };
-    let path = path.replace('/', "__");
+    let filename = path.replace('/', "__");
+    let path = filename.trim_matches('_');
     let (path, extension) = match path.rsplit_once('.') {
         Some((name, extension)) => (name, format!(".{}", extension)),
-        None => (path.as_str(), "".to_string()),
+        None => {
+            let extension =
+                if let Some(content_type) = wrapper.response_config.headers.get("Content-Type") {
+                    if content_type.contains("application/json") {
+                        ".json"
+                    } else {
+                        ""
+                    }
+                } else {
+                    ""
+                };
+            (path, extension.to_string())
+        }
     };
 
     format!(
-        "{}{}_{}{}",
+        "{}_{}_{}{}",
         request.methods[0],
         path,
         unique[..6].chars().as_str(),
@@ -92,12 +115,18 @@ fn matcher_to_filename(request: &StaticMatchesConfig, unique: String) -> String 
 }
 
 async fn write_body(dir: &Path, wrapper: EntryWrapperWithBody) -> Result<EntryWrapper, Error> {
-    let body: Option<StaticResponseBodyConfig<ResponseData>> = match wrapper.body {
-        Some(body_text) => {
+    let body: Option<StaticResponseBodyConfig<ResponseData>> = match wrapper.body.clone() {
+        Some(mut body_text) => {
             let unique = format!("{:x}", md5::compute(&body_text));
-            let filename = matcher_to_filename(&wrapper.matcher, unique);
+            let filename = matcher_to_filename(&wrapper, unique);
 
             info!("Creating asset file {}", filename);
+
+            if let Ok(json_body) = serde_json::from_str::<serde_json::Value>(&body_text) {
+                if let Ok(pretty_body) = serde_json::to_string_pretty(&json_body) {
+                    body_text = pretty_body;
+                }
+            }
 
             let path = dir.join(&filename);
             std::fs::write(path, body_text)?;
@@ -118,7 +147,7 @@ async fn write_body(dir: &Path, wrapper: EntryWrapperWithBody) -> Result<EntryWr
         delay: wrapper.response_config.delay,
     };
     Ok(EntryWrapper {
-        matcher: wrapper.matcher.clone(),
+        matcher: wrapper.matcher,
         response_config,
     })
 }
