@@ -71,6 +71,9 @@ jobs:
           key: ${{ runner.os }}-cargo-release-${{ hashFiles('.github/cache-version') }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
               ${{ runner.os }}-cargo-release-${{ hashFiles('.github/cache-version') }}-
+      - name: Install Dependencies
+        run: |
+          brew install protobuf
       - name: Build Artifacts
         run: |
           .github/bin/build-osx.sh ${{ inputs.version }}
