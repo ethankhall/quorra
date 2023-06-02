@@ -109,6 +109,6 @@ jobs:
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
-          tar -C target/aarch64-apple-darwin/release -cvzf target/artifacts/quorra-linux-aarch64.tgz quorra
-          tar -C target/x86_64-apple-darwin/release -cvzf target/artifacts/quorra-linux-amd64.tgz quorra
+          tar -C target/aarch64-unknown-linux-gnu/release -cvzf target/artifacts/quorra-linux-aarch64.tgz quorra
+          tar -C target/x86_64-unknown-linux-gnu/release -cvzf target/artifacts/quorra-linux-amd64.tgz quorra
           gh release upload ${{ inputs.version }} target/artifacts/quorra-linux-aarch64.tgz target/artifacts/quorra-linux-amd64.tgz
