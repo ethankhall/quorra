@@ -12,7 +12,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            vendor/
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('.github/cache-version') }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+              ${{ runner.os }}-cargo-release-${{ hashFiles('.github/cache-version') }}-
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -24,7 +36,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            vendor/
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('.github/cache-version') }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+              ${{ runner.os }}-cargo-release-${{ hashFiles('.github/cache-version') }}-
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
