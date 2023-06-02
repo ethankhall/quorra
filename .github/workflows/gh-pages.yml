@@ -1,22 +1,15 @@
-name: github pages
+name: Build Github Pages
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_call:
 
-permissions:
-  pages: write
-  contents: write
-  
 jobs:
   deploy:
     runs-on: ubuntu-20.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
