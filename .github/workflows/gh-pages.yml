@@ -1,15 +1,8 @@
-name: github pages
+name: Build Github Pages
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_call:
 
-permissions:
-  pages: write
-  contents: write
-  
 jobs:
   deploy:
     runs-on: ubuntu-20.04
