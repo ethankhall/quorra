@@ -4,7 +4,7 @@ name: Continuous integration
 
 permissions:
   contents: write
-  packages: read
+  packages: write
   pages: read
   
 
@@ -74,4 +74,4 @@ jobs:
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
-          gh release delete ${{ needs.create-release.outputs.version }} --yes
+          gh release delete ${{ needs.create-release.outputs.version }} --yes --cleanup-tag
