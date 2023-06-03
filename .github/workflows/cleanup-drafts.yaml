@@ -1,0 +1,22 @@
+name: Cleanup Old Releases
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '0 0 * * *'
+
+permissions:
+  contents: write
+  packages: write
+  pages: write
+
+jobs:
+  delete-pre-release:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+        gh release list --repo ethankhall/quorra | \
+          grep 'Pre-release' | \
+          tr '\t' ' ' | \
+          cut -d ' ' -f 1 | \
+          xargs -I{} gh release delete {} -y --cleanup-tag --repo ethankhall/quorra

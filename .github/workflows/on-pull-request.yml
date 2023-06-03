@@ -4,7 +4,7 @@ name: Continuous integration
 
 permissions:
   contents: write
-  packages: read
+  packages: write
   pages: read
   
 
@@ -62,16 +62,14 @@ jobs:
   delete-failed:
     runs-on: ubuntu-latest
     needs:
-      - check
       - create-release
       - publish
       - remove-draft
-      - docs
-    if: ${{ failure() && needs.create-release.conclusion == 'success' }}
+    if: failure() && needs.create-release.result == 'success'
     steps:
       - uses: actions/checkout@v3
       - name: delete draft release release
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
-          gh release delete ${{ needs.create-release.outputs.version }} --yes
+          gh release delete ${{ needs.create-release.outputs.version }} --yes --cleanup-tag
