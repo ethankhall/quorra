@@ -62,12 +62,10 @@ jobs:
   delete-failed:
     runs-on: ubuntu-latest
     needs:
-      - check
       - create-release
       - publish
       - remove-draft
-      - docs
-    if: ${{ failure() && needs.create-release.conclusion == 'success' }}
+    if: failure() && needs.create-release.result == 'success'
     steps:
       - uses: actions/checkout@v3
       - name: delete draft release release
