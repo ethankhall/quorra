@@ -4,7 +4,7 @@ name: Continuous integration
 
 permissions:
   contents: write
-  packages: read
+  packages: write
   pages: read
   
 
