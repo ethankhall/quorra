@@ -70,7 +70,6 @@ jobs:
         run: |
           set -ex
           docker buildx imagetools create -t ghcr.io/ethankhall/quorra:latest ghcr.io/ethankhall/quorra:${{ needs.create-release.outputs.version }}
-          docker push ghcr.io/ethankhall/quorra:latest
 
   check:
     uses: ./.github/workflows/check-step.yml
